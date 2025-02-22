@@ -72,10 +72,10 @@ class RTSession:
 
         if backend == "azure":
             return RTClient(
-                #url=os.getenv("AZURE_OPENAI_ENDPOINT"),
+                # url=os.getenv("AZURE_OPENAI_ENDPOINT"),
                 url="https://sanch-m751m6ic-eastus2.openai.azure.com",
                 token_credential=DefaultAzureCredential(),
-                #deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+                # deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
                 azure_deployment="gpt-4o-mini-realtime-preview-phack",
             )
         return RTClient(

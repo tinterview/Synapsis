@@ -24,7 +24,9 @@ from rtclient import (
 
 
 def resample_audio(audio_data, original_sample_rate, target_sample_rate):
-    number_of_samples = round(len(audio_data) * float(target_sample_rate) / original_sample_rate)
+    number_of_samples = round(
+        len(audio_data) * float(target_sample_rate) / original_sample_rate
+    )
     resampled_audio = resample(audio_data, number_of_samples)
     return resampled_audio.astype(np.int16)
 
@@ -46,7 +48,9 @@ async def send_audio(client: RTClient, audio_file_path: str):
         else {}
     )
 
-    audio_data, original_sample_rate = sf.read(audio_file_path, dtype="int16", **extra_params)
+    audio_data, original_sample_rate = sf.read(
+        audio_file_path, dtype="int16", **extra_params
+    )
 
     if original_sample_rate != sample_rate:
         audio_data = resample_audio(audio_data, original_sample_rate, sample_rate)
@@ -77,14 +81,22 @@ async def receive_message_item(item: RTMessageItem, out_dir: str):
 
             audio_task = asyncio.create_task(collect_audio(contentPart))
             transcript_task = asyncio.create_task(collect_transcript(contentPart))
-            audio_data, audio_transcript = await asyncio.gather(audio_task, transcript_task)
+            audio_data, audio_transcript = await asyncio.gather(
+                audio_task, transcript_task
+            )
             print(prefix, f"Audio received with length: {len(audio_data)}")
             print(prefix, f"Audio Transcript: {audio_transcript}")
-            with open(os.path.join(out_dir, f"{item.id}_{contentPart.content_index}.wav"), "wb") as out:
+            with open(
+                os.path.join(out_dir, f"{item.id}_{contentPart.content_index}.wav"),
+                "wb",
+            ) as out:
                 audio_array = np.frombuffer(audio_data, dtype=np.int16)
                 sf.write(out, audio_array, samplerate=24000)
             with open(
-                os.path.join(out_dir, f"{item.id}_{contentPart.content_index}.audio_transcript.txt"),
+                os.path.join(
+                    out_dir,
+                    f"{item.id}_{contentPart.content_index}.audio_transcript.txt",
+                ),
                 "w",
                 encoding="utf-8",
             ) as out:
@@ -95,7 +107,11 @@ async def receive_message_item(item: RTMessageItem, out_dir: str):
                 text_data += chunk
             print(prefix, f"Text: {text_data}")
             with open(
-                os.path.join(out_dir, f"{item.id}_{contentPart.content_index}.text.txt"), "w", encoding="utf-8"
+                os.path.join(
+                    out_dir, f"{item.id}_{contentPart.content_index}.text.txt"
+                ),
+                "w",
+                encoding="utf-8",
             ) as out:
                 out.write(text_data)
 
@@ -104,7 +120,9 @@ async def receive_function_call_item(item: RTFunctionCallItem, out_dir: str):
     prefix = f"[function_call_item={item.id}]"
     await item
     print(prefix, f"Function call arguments: {item.arguments}")
-    with open(os.path.join(out_dir, f"{item.id}.function_call.json"), "w", encoding="utf-8") as out:
+    with open(
+        os.path.join(out_dir, f"{item.id}.function_call.json"), "w", encoding="utf-8"
+    ) as out:
         out.write(item.arguments)
 
 
@@ -147,12 +165,16 @@ async def receive_messages(client: RTClient, out_dir: str):
 async def run(client: RTClient, audio_file_path: str, out_dir: str):
     print("Configuring Session...", end="", flush=True)
     await client.configure(
-        turn_detection=ServerVAD(threshold=0.5, prefix_padding_ms=300, silence_duration_ms=200),
+        turn_detection=ServerVAD(
+            threshold=0.5, prefix_padding_ms=300, silence_duration_ms=200
+        ),
         input_audio_transcription=InputAudioTranscription(model="whisper-1"),
     )
     print("Done")
 
-    await asyncio.gather(send_audio(client, audio_file_path), receive_messages(client, out_dir))
+    await asyncio.gather(
+        send_audio(client, audio_file_path), receive_messages(client, out_dir)
+    )
 
 
 def get_env_var(var_name: str) -> str:
@@ -166,7 +188,11 @@ async def with_azure_openai(audio_file_path: str, out_dir: str):
     endpoint = "https://sanch-m751m6ic-eastus2.openai.azure.com"
     key = "AQy8P8x5Gp0ZJ9c142ITx71PGcOSiKF8mNfbBiEspOIgOrNJrm7fJQQJ99BBACHYHv6XJ3w3AAAAACOGPeQS"
     deployment = "gpt-4o-mini-realtime-preview-phack"
-    async with RTClient(url=endpoint, key_credential=AzureKeyCredential(key), azure_deployment=deployment) as client:
+    async with RTClient(
+        url=endpoint,
+        key_credential=AzureKeyCredential(key),
+        azure_deployment=deployment,
+    ) as client:
         await run(client, audio_file_path, out_dir)
 
 

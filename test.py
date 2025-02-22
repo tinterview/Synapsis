@@ -1,11 +1,9 @@
-import os
-import base64
 from openai import AzureOpenAI
 
 # Set up environment variables or default values
-endpoint =  "https://sanchar-aoai-eastus.openai.azure.com"
+endpoint = "https://sanchar-aoai-eastus.openai.azure.com"
 deployment = "gpt-4o-mini-phack"
-subscription_key =  "2b1e15adc48d44eebc663af4ff7ebd2c"
+subscription_key = "2b1e15adc48d44eebc663af4ff7ebd2c"
 
 # Initialize Azure OpenAI Service client with key-based authentication
 client = AzureOpenAI(
@@ -21,9 +19,9 @@ chat_prompt = [
         "content": [
             {
                 "type": "text",
-                "text": "You are an AI assistant that helps people find information."
+                "text": "You are an AI assistant that helps people find information.",
             }
-        ]
+        ],
     }
 ]
 
@@ -37,7 +35,7 @@ completion = client.chat.completions.create(
     frequency_penalty=0,
     presence_penalty=0,
     stop=None,
-    stream=False
+    stream=False,
 )
 
 # Print the result

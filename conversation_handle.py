@@ -22,9 +22,7 @@ ws_uri = "wss://sanch-m751m6ic-eastus2.openai.azure.com/openai/realtime?api-vers
 print(ws_uri)
 
 # Authentication headers
-headers = {
-    "Authorization": f"Bearer {AZURE_OPENAI_KEY}"
-}
+headers = {"Authorization": f"Bearer {AZURE_OPENAI_KEY}"}
 
 # FizzBuzz problem as context
 leetcode_problem_context = """
@@ -67,7 +65,7 @@ vad = webrtcvad.Vad(VAD_MODE)
 
 
 def record_audio_with_vad():
-    """ Continuously records audio, only buffering speech using VAD. """
+    """Continuously records audio, only buffering speech using VAD."""
     print("Listening for speech...")
     buffer = []
     recording = False
@@ -95,12 +93,12 @@ def record_audio_with_vad():
 
 
 def audio_to_wav_bytes(audio_data):
-    """ Converts raw numpy audio to WAV format """
+    """Converts raw numpy audio to WAV format"""
     audio_segment = AudioSegment(
         audio_data.tobytes(),
         frame_rate=SAMPLE_RATE,
         sample_width=audio_data.dtype.itemsize,
-        channels=1
+        channels=1,
     )
     wav_io = BytesIO()
     audio_segment.export(wav_io, format="wav")
@@ -108,7 +106,7 @@ def audio_to_wav_bytes(audio_data):
 
 
 def play_audio(wav_bytes):
-    """ Plays AI response audio """
+    """Plays AI response audio"""
     audio_segment = AudioSegment.from_wav(BytesIO(wav_bytes))
     play(audio_segment)
 
@@ -119,8 +117,10 @@ async def converse_with_ai():
         system_message = {
             "type": "system",
             "data": {
-                "text": system_prompt + "\n\nProblem Statement:\n" + leetcode_problem_context
-            }
+                "text": system_prompt
+                + "\n\nProblem Statement:\n"
+                + leetcode_problem_context
+            },
         }
         await websocket.send(json.dumps(system_message))
 
@@ -134,19 +134,17 @@ async def converse_with_ai():
             user_audio_wav = audio_to_wav_bytes(user_audio)
 
             # Send user audio to the AI
-            user_message = {
-                "type": "user",
-                "data": {
-                    "audio": user_audio_wav
-                }
-            }
+            user_message = {"type": "user", "data": {"audio": user_audio_wav}}
             await websocket.send(json.dumps(user_message))
 
             # Receive AI response
             response = await websocket.recv()
             response_data = json.loads(response)
 
-            if response_data["type"] == "assistant" and "audio" in response_data["data"]:
+            if (
+                response_data["type"] == "assistant"
+                and "audio" in response_data["data"]
+            ):
                 ai_audio_wav = response_data["data"]["audio"]
                 play_audio(ai_audio_wav)
             else:

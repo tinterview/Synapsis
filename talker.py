@@ -17,9 +17,7 @@ VOICE_NAME = "en-US-JennyNeural"  # Choose from available voices
 
 # Initialize clients
 openai_client = AzureOpenAI(
-    api_key=OPENAI_KEY,
-    api_version="2024-02-01",
-    azure_endpoint=OPENAI_ENDPOINT
+    api_key=OPENAI_KEY, api_version="2024-02-01", azure_endpoint=OPENAI_ENDPOINT
 )
 
 # Configure speech components
@@ -31,38 +29,47 @@ audio_input_config = speechsdk.audio.AudioConfig(use_default_microphone=True)
 audio_output_config = speechsdk.audio.AudioConfig(use_default_speaker=True)
 
 # Create recognizer and synthesizer
-recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config, audio_config=audio_input_config)
-synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_output_config)
+recognizer = speechsdk.SpeechRecognizer(
+    speech_config=speech_config, audio_config=audio_input_config
+)
+synthesizer = speechsdk.SpeechSynthesizer(
+    speech_config=speech_config, audio_config=audio_output_config
+)
 
 # Conversation history
 conversation_history = [
-    {"role": "system", "content": "You are a helpful assistant. Keep responses concise and natural."}
+    {
+        "role": "system",
+        "content": "You are a helpful assistant. Keep responses concise and natural.",
+    }
 ]
+
 
 def process_message(text: str):
     """Process user input through OpenAI and synthesize response"""
     try:
         # Add user message to history
         conversation_history.append({"role": "user", "content": text})
-        
+
         # Get OpenAI response
         response = openai_client.chat.completions.create(
-            model=DEPLOYMENT_NAME,
-            messages=conversation_history,
-            temperature=0.7
+            model=DEPLOYMENT_NAME, messages=conversation_history, temperature=0.7
         )
-        
+
         assistant_response = response.choices[0].message.content
-        
+
         # Add assistant response to history
-        conversation_history.append({"role": "assistant", "content": assistant_response})
-        
+        conversation_history.append(
+            {"role": "assistant", "content": assistant_response}
+        )
+
         # Print and synthesize response
         print(f"Assistant: {assistant_response}")
         synthesizer.speak_text_async(assistant_response).get()
-        
+
     except Exception as e:
         print(f"Error: {str(e)}")
+
 
 # Register event handlers
 def recognized_callback(evt: speechsdk.SpeechRecognitionEventArgs):
@@ -70,6 +77,7 @@ def recognized_callback(evt: speechsdk.SpeechRecognitionEventArgs):
         user_input = evt.result.text
         print(f"User: {user_input}")
         process_message(user_input)
+
 
 recognizer.recognized.connect(recognized_callback)
 

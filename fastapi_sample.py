@@ -72,11 +72,9 @@ class RTSession:
 
         if backend == "azure":
             return RTClient(
-                # url=os.getenv("AZURE_OPENAI_ENDPOINT"),
-                url="https://sanch-m751m6ic-eastus2.openai.azure.com",
-                token_credential=DefaultAzureCredential(),
-                # deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
-                azure_deployment="gpt-4o-mini-realtime-preview-phack",
+                url=os.getenv("AZURE_OPENAI_ENDPOINT"),
+                key_credential=DefaultAzureCredential(),
+                deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
             )
         return RTClient(
             key_credential=AzureKeyCredential(os.getenv("OPENAI_API_KEY")),
@@ -237,7 +235,7 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     logger.info("New WebSocket connection established")
 
-    async with RTSession(websocket, "azure") as session:
+    async with RTSession(websocket, os.getenv("BACKEND")) as session:
         try:
             await session.initialize()
 

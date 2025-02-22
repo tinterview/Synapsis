@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './HomeScreen.css';
+import logo from './logo2.jpeg'
 
-const HomeScreen = ({ onProblemSelect, isDarkMode }) => {
+const HomeScreen = ({ onProblemSelect, isDarkMode, onRecordingsClick }) => {
   const metrics = [
     {
       title: 'Problems Solved',
@@ -75,69 +76,90 @@ const HomeScreen = ({ onProblemSelect, isDarkMode }) => {
     }
   ];
 
-  const CircularProgress = ({ percentage, color, value, unit, total }) => {
+  const CircularProgress = ({ percentage, color, value, unit }) => {
     const radius = 35;
     const circumference = 2 * Math.PI * radius;
     const progress = circumference - (percentage / 100) * circumference;
     const center = 60;
     
     return (
-      <div className="progress-container">
-        <svg className="progress-ring" width="120" height="120" viewBox="0 0 120 120">
-          <circle
-            className="progress-ring-circle-bg"
-            cx={center}
-            cy={center}
-            r={radius}
-            fill="none"
-            strokeWidth="8"
-          />
-          <circle
-            className="progress-ring-circle"
-            cx={center}
-            cy={center}
-            r={radius}
-            fill="none"
-            stroke={color}
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={progress}
-            transform={`rotate(-90 ${center} ${center})`}
-          />
+      <svg className="progress-ring" width="120" height="120" viewBox="0 0 120 120">
+        <circle
+          className="progress-ring-circle-bg"
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          strokeWidth="8"
+        />
+        <circle
+          className="progress-ring-circle"
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={progress}
+        />
+        <text
+          x={center}
+          y={center}
+          className="progress-value"
+          fill={color}
+          textAnchor="middle"
+          dominantBaseline="middle"
+        >
+          {value}
+        </text>
+        {unit && (
           <text
             x={center}
-            y={unit ? center - 12 : center - 8}
-            className="progress-value"
+            y={center + 20}
+            className="progress-unit"
             fill={color}
             textAnchor="middle"
-            dominantBaseline="central"
+            dominantBaseline="middle"
           >
-            {value}
+            {unit}
           </text>
-          {unit && (
-            <text
-              x={center}
-              y={center + 8}
-              className="progress-unit"
-              fill={color}
-              textAnchor="middle"
-              dominantBaseline="central"
-            >
-              {unit}
-            </text>
-          )}
-          <text
-            x={center}
-            y={unit ? center + 24 : center + 16}
-            className="progress-total"
-            fill={isDarkMode ? "#666" : "#999"}
-            textAnchor="middle"
-            dominantBaseline="central"
-          >
-            / {total}
-          </text>
-        </svg>
+        )}
+      </svg>
+    );
+  };
+
+  const MetricCard = ({ metric }) => {
+    const [isHovered, setIsHovered] = useState(false);
+
+    return (
+      <div 
+        className="metric-card"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <h3 className="metric-title">{metric.title}</h3>
+        <div className="metric-content">
+          <div className="progress-container">
+            <div className={`metric-display ${isHovered ? 'hovered' : ''}`}>
+              <div className="circular-view">
+                <CircularProgress 
+                  percentage={metric.percentage}
+                  color={metric.color}
+                  value={metric.value}
+                  unit={metric.unit}
+                />
+              </div>
+              <div className="numeric-view">
+                <span className="big-number" style={{ color: metric.color }}>
+                  {metric.value}
+                  {metric.unit && <span className="unit">{metric.unit}</span>}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
@@ -147,7 +169,7 @@ const HomeScreen = ({ onProblemSelect, isDarkMode }) => {
       <header className="welcome-header">
         <div className="header-content">
           <div className="logo">
-            <img src="/logo.png" alt="AI Coding Assistant" className="logo-image" />
+            <img src={logo} alt="AI Coding Assistant" className="logo-image" />
           </div>
           <h1>Welcome, Deepansh Saxena</h1>
         </div>
@@ -158,18 +180,7 @@ const HomeScreen = ({ onProblemSelect, isDarkMode }) => {
           <h2 className="section-title">User Metrics</h2>
           <section className="metrics-grid">
             {metrics.map((metric, index) => (
-              <div key={index} className="metric-card">
-                <h3 className="metric-title">{metric.title}</h3>
-                <div className="metric-content">
-                  <CircularProgress 
-                    percentage={metric.percentage}
-                    color={metric.color}
-                    value={metric.value}
-                    unit={metric.unit}
-                    total={metric.total}
-                  />
-                </div>
-              </div>
+              <MetricCard key={index} metric={metric} />
             ))}
           </section>
         </div>
@@ -204,7 +215,7 @@ const HomeScreen = ({ onProblemSelect, isDarkMode }) => {
 
             <div className="videos-section">
               <h2>See your Recordings</h2>
-              <button className="watch-videos-btn">
+              <button className="watch-videos-btn" onClick={onRecordingsClick}>
                 Watch Now
                 <span className="arrow-icon">→</span>
               </button>
@@ -213,9 +224,7 @@ const HomeScreen = ({ onProblemSelect, isDarkMode }) => {
         </div>
       </main>
 
-      <footer className="home-footer">
-        <p>AI Coding Assistant © 2025</p>
-      </footer>
+    
     </div>
   );
 };

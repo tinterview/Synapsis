@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import CodingInterface from './components/CodingInterface';
 import HomeScreen from './components/HomeScreen';
+import RecordingsPage from './components/RecordingsPage';
+import Landing from './components/Landing';
 import './App.css';
 
 const App = () => {
@@ -10,85 +13,54 @@ const App = () => {
     return savedMode ? JSON.parse(savedMode) : window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
-  // Application states
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentScreen, setCurrentScreen] = useState('home');
-
   // Apply dark mode and save preference
   useEffect(() => {
     document.body.classList.toggle('dark-mode', isDarkMode);
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
 
-  // Initial loading simulation
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   // Theme toggle handler
   const toggleDarkMode = () => {
     setIsDarkMode(prev => !prev);
   };
 
-  // Navigation handlers
-  const handleProblemSelect = (problemId) => {
-    if (problemId === 'fizzbuzz') {
-      setCurrentScreen('coding');
-    }
-  };
-
-  const handleBackToHome = () => {
-    setCurrentScreen('home');
-  };
-
-  // Loading screen render
-  if (isLoading) {
-    return (
-      <div className="loading-screen">
-        <div className="loading-spinner"></div>
-        <p>Loading AI Coding Assistant...</p>
-      </div>
-    );
-  }
-
-  // Main application render
   return (
-    <div className={`app ${isDarkMode ? 'dark-mode' : ''}`}>
-      {/* Theme Toggle Button */}
-      <button
-        className="theme-toggle"
-        onClick={toggleDarkMode}
-        aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-      >
-        {isDarkMode ? '☀️' : '🌙'}
-      </button>
+    <Router>
+      <div className={`app ${isDarkMode ? 'dark-mode' : ''}`}>
+        {/* Theme Toggle Button */}
+        <button
+          className="theme-toggle"
+          onClick={toggleDarkMode}
+          aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {/* {isDarkMode ? '☀️' : '🌙'} */}
+        </button>
 
-      {/* Main Content */}
-      <main className="main-container">
-        {currentScreen === 'home' ? (
-          <HomeScreen 
-            onProblemSelect={handleProblemSelect} 
-            isDarkMode={isDarkMode} 
-          />
-        ) : (
-          <div className="coding-container">
-            <button className="back-button" onClick={handleBackToHome}>
-              ← Back to Home
-            </button>
-            <CodingInterface />
-          </div>
-        )}
-      </main>
+        {/* Main Content */}
+        <main className="main-container">
+          <Routes>
+            {/* Landing page */}
+            <Route path="/" element={<Landing isDarkMode={isDarkMode} />} />
 
-      {/* Footer */}
-      <footer className="app-footer">
-        <p>AI Coding Assistant © 2024</p>
-      </footer>
-    </div>
+            <Route path="/home" element={<HomeScreen isDarkMode={isDarkMode} />} />
+            
+            {/* Coding page */}
+            <Route path="/coding" element={<CodingInterface isDarkMode={isDarkMode} />} />
+            
+            {/* Recordings page */}
+            <Route path="/recordings" element={<RecordingsPage isDarkMode={isDarkMode} />} />
+            
+            {/* Redirect unknown routes to home */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </main>
+
+        {/* Footer */}
+        <footer className="app-footer">
+          <p>AI Coding Assistant © 2024</p>
+        </footer>
+      </div>
+    </Router>
   );
 };
 

@@ -1,46 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
-import { AlertCircle, Check, Clock, XCircle } from 'lucide-react';
+import { AlertCircle, Check, Clock, XCircle, Camera } from 'lucide-react';
 import './CodingInterface.css';
-import image from "./image1.png";
+import ChatInterface from './chat-interface';
 
-const CodingInterface = ({ isDarkMode, onBackClick }) => {
+
+const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
   const codeTemplates = {
     python: {
-      template: 'def fizzbuzz(n):\n    # Your code here\n    pass',
-      description: `Write a function that returns an array of strings for numbers from 1 to n, where:
-• For multiples of 3, use "Fizz" instead of the number
-• For multiples of 5, use "Buzz" instead of the number
-• For multiples of both 3 and 5, use "FizzBuzz"
-• For other numbers, use the number itself as a string`,
-      example: {
-        input: 'n = 5',
-        output: '[\'1\', \'2\', \'Fizz\', \'4\', \'Buzz\']'
-      }
+      template: 'def fizzbuzz(n):\n    # Your code here\n    pass'
     },
     javascript: {
-      template: 'function fizzbuzz(n) {\n    // Your code here\n    return [];\n}',
-      description: `Implement a function that returns an array of strings for numbers from 1 to n, where:
-• For numbers divisible by 3, use "Fizz"
-• For numbers divisible by 5, use "Buzz"
-• For numbers divisible by both 3 and 5, use "FizzBuzz"
-• For all other numbers, use the number as a string`,
-      example: {
-        input: 'n = 5',
-        output: '["1", "2", "Fizz", "4", "Buzz"]'
-      }
+      template: 'function fizzbuzz(n) {\n    // Your code here\n    return [];\n}'
     },
     java: {
-      template: 'public class Solution {\n    public List<String> fizzbuzz(int n) {\n        // Your code here\n        return new ArrayList<>();\n    }\n}',
-      description: `Create a method that returns a List<String> for numbers from 1 to n, where:
-• Replace numbers divisible by 3 with "Fizz"
-• Replace numbers divisible by 5 with "Buzz"
-• Replace numbers divisible by both 3 and 5 with "FizzBuzz"
-• Convert other numbers to their string representation`,
-      example: {
-        input: 'n = 5',
-        output: 'Arrays.asList("1", "2", "Fizz", "4", "Buzz")'
-      }
+      template: 'public class Solution {\n    public List<String> fizzbuzz(int n) {\n        // Your code here\n        return new ArrayList<>();\n    }\n}'
     }
   };
 
@@ -55,6 +29,7 @@ const CodingInterface = ({ isDarkMode, onBackClick }) => {
   const [expandedTestCase, setExpandedTestCase] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [showEndConfirmation, setShowEndConfirmation] = useState(false);
 
   const videoRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -69,7 +44,7 @@ const CodingInterface = ({ isDarkMode, onBackClick }) => {
   const testCases = [
     { id: 1, input: '3', expectedOutput: '[\'1\', \'2\', \'Fizz\']' },
     { id: 2, input: '5', expectedOutput: '[\'1\', \'2\', \'Fizz\', \'4\', \'Buzz\']' },
-    { id: 3, input: '15', expectedOutput: '[\'1\', \'2\', \'Fizz\', \'4\', \'Buzz\', \'Fizz\', \'7\', \'8\', \'Fizz\', \'Buzz\', \'11\', \'Fizz\', \'13\', \'14\', \'FizzBuzz\']' }    
+    { id: 3, input: '15', expectedOutput: '[\'1\', \'2\', \'Fizz\', \'4\', \'Buzz\', \'Fizz\', \'7\', \'8\', \'Fizz\', \'Buzz\', \'11\', \'Fizz\', \'13\', \'14\', \'FizzBuzz\']' }
   ];
 
   useEffect(() => {
@@ -94,6 +69,13 @@ const CodingInterface = ({ isDarkMode, onBackClick }) => {
       }
     };
     startWebcam();
+
+    // Cleanup function to stop all tracks when component unmounts
+    return () => {
+      if (videoRef.current?.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+      }
+    };
   }, []);
 
   const formatTime = (seconds) => {
@@ -109,7 +91,6 @@ const CodingInterface = ({ isDarkMode, onBackClick }) => {
     setUserCode(codeTemplates[newLang].template);
   };
 
-  // Wrap the user’s code with a snippet that invokes fizzbuzz with the provided input.
   const buildSubmissionCode = (code, language) => {
     if (language === 'python') {
       return `${code}\n\nif __name__ == '__main__':\n    import sys\n    n = int(sys.stdin.read().strip())\n    print(fizzbuzz(n))`;
@@ -117,13 +98,11 @@ const CodingInterface = ({ isDarkMode, onBackClick }) => {
       return `${code}\n\nconst fs = require('fs');\nconst input = parseInt(fs.readFileSync(0, 'utf-8').trim());\nconsole.log(fizzbuzz(input));`;
     } else if (language === 'java') {
       return `${code}\n\nimport java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        Solution sol = new Solution();\n        System.out.println(sol.fizzbuzz(n));\n    }\n}`;
-    } else {
-      return code;
     }
+    return code;
   };
 
   const submitToJudge0 = async (code, input) => {
-    // Build the final code to be executed by wrapping the user’s code.
     const finalCode = buildSubmissionCode(code, language);
     const response = await fetch('https://judge0-ce.p.rapidapi.com/submissions', {
       method: 'POST',
@@ -138,9 +117,7 @@ const CodingInterface = ({ isDarkMode, onBackClick }) => {
         stdin: input
       })
     });
-
-    const data = await response.json();
-    return data.token;
+    return await response.json();
   };
 
   const getSubmissionResult = async (token) => {
@@ -161,7 +138,7 @@ const CodingInterface = ({ isDarkMode, onBackClick }) => {
     });
 
     try {
-      const token = await submitToJudge0(userCode, userInput);
+      const { token } = await submitToJudge0(userCode, userInput);
       let result;
       
       do {
@@ -196,7 +173,7 @@ const CodingInterface = ({ isDarkMode, onBackClick }) => {
     try {
       const results = await Promise.all(
         testCases.map(async (testCase) => {
-          const token = await submitToJudge0(userCode, testCase.input);
+          const { token } = await submitToJudge0(userCode, testCase.input);
           let result;
           
           do {
@@ -279,12 +256,36 @@ const CodingInterface = ({ isDarkMode, onBackClick }) => {
     }
   };
 
-  const handleClarify = () => {
-    setAiMessage("What specific part of the problem would you like me to clarify?");
+  const handleEndInterview = () => {
+    setShowEndConfirmation(true);
+  };
+
+  const confirmEndInterview = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+    }
+    onEndInterview();
   };
 
   return (
     <div className={`interface-container ${isDarkMode ? 'dark-mode' : ''}`}>
+      {showEndConfirmation && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>End Interview?</h3>
+            <p>Are you sure you want to end the interview? This will save your recording and submit your final code.</p>
+            <div className="modal-buttons">
+              <button className="modal-button cancel" onClick={() => setShowEndConfirmation(false)}>
+                Cancel
+              </button>
+              <button className="modal-button confirm" onClick={confirmEndInterview}>
+                End Interview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <nav className="interface-nav">
         <div className="nav-left">
           <button className="back-button" onClick={onBackClick}>
@@ -316,15 +317,21 @@ const CodingInterface = ({ isDarkMode, onBackClick }) => {
           </div>
           
           <div className="problem-description">
-            <p>{codeTemplates[language].description}</p>
-          </div>
-          
-          <div className="examples-section">
-            <h3>Examples:</h3>
-            <div className="example-box">
-              <div><strong>Input:</strong> {codeTemplates[language].example.input}</div>
-              <div><strong>Output:</strong> {codeTemplates[language].example.output}</div>
-              <div className="explanation">Every third number becomes 'Fizz', every fifth number becomes 'Buzz'</div>
+            <p>Write a function that returns an array of strings for numbers from 1 to n, where:</p>
+            <ul>
+              <li>For multiples of 3, use "Fizz" instead of the number</li>
+              <li>For multiples of 5, use "Buzz" instead of the number</li>
+              <li>For multiples of both 3 and 5, use "FizzBuzz"</li>
+              <li>For other numbers, use the number itself as a string</li>
+            </ul>
+            
+            <div className="examples-section">
+              <h3>Example:</h3>
+              <div className="example-box">
+                <div><strong>Input:</strong> n = 5</div>
+                <div><strong>Output:</strong> ['1', '2', 'Fizz', '4', 'Buzz']</div>
+                <div className="explanation">Every third number becomes 'Fizz', every fifth number becomes 'Buzz'</div>
+              </div>
             </div>
           </div>
         </section>
@@ -349,7 +356,6 @@ const CodingInterface = ({ isDarkMode, onBackClick }) => {
                 >
                   {isRunning ? 'Running...' : 'Run'}
                 </button>
-                <button className="clarify-btn" onClick={handleClarify}>Clarify</button>
                 <button 
                   className={`submit-btn ${isSubmitting ? 'submitting' : ''}`}
                   onClick={handleSubmit}
@@ -357,12 +363,18 @@ const CodingInterface = ({ isDarkMode, onBackClick }) => {
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit'}
                 </button>
+                <button 
+                  className="end-interview-btn"
+                  onClick={handleEndInterview}
+                >
+                  End Interview
+                </button>
               </div>
             </div>
           </div>
 
           <Editor
-            height="calc(100vh - 280px)"
+            height="calc(100vh - 400px)"
             defaultLanguage="python"
             language={language}
             value={userCode}
@@ -449,19 +461,15 @@ const CodingInterface = ({ isDarkMode, onBackClick }) => {
         <section className="assistant-panel">
           <div className="ai-header">
             <div className="ai-avatar">
-              <img src={image} alt="AI Assistant" />
+              <img src="/api/placeholder/40/40" alt="AI Assistant" />
             </div>
             <div className="ai-info">
               <h3>AI Assistant</h3>
               <p className="ai-status">Ready to help</p>
             </div>
           </div>
-          
-          <div className="messages-container">
-            <div className="message assistant">
-              <p>{aiMessage}</p>
-            </div>
-          </div>
+
+          <ChatInterface />
 
           <div className="webcam-container">
             <video 
@@ -475,6 +483,7 @@ const CodingInterface = ({ isDarkMode, onBackClick }) => {
               className={`record-button ${isRecording ? 'recording' : ''}`}
               onClick={toggleRecording}
             >
+              <Camera size={16} />
               {isRecording ? 'Stop Recording' : 'Start Recording'}
             </button>
           </div>

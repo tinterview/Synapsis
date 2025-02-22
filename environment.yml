@@ -1,4 +1,3 @@
-# conda env create -f environment.yml
 name: tinterview
 channels:
   - defaults
@@ -11,9 +10,15 @@ dependencies:
   - pip
   - setuptools>=65
   - wheel
+  - websockets
+  - sounddevice
+  - webrtcvad
+  - pydub
+  - requests
+  - ffmpeg  # Required for handling audio conversions
+  - portaudio  # Required for sounddevice (may need manual installation on some systems)
   - pip:
       - langchain-openai
-      - openai-whisper
-      - openai
-      - openai[tts]
+      - uvicorn  # For running FastAPI server
+
 

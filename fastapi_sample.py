@@ -9,7 +9,6 @@ import asyncio
 from loguru import logger
 import os
 from dotenv import load_dotenv
-from azure.identity import DefaultAzureCredential
 from azure.core.credentials import AzureKeyCredential
 from rtclient import (
     InputAudioTranscription,
@@ -22,10 +21,12 @@ from rtclient import (
 
 load_dotenv()
 
+
 # Add this helper class at the top of the file (e.g., after your imports)
 class RTMessage(dict):
     def __getattr__(self, name):
         return self.get(name)
+
     def __setattr__(self, name, value):
         self[name] = value
 
@@ -78,15 +79,10 @@ class RTSession:
     def _initialize_client(self, backend: str | None):
         self.logger.debug(f"Initializing RT client with backend: {backend}")
 
-        if backend == "azure":
-            return RTClient(
-                url=os.getenv("AZURE_OPENAI_ENDPOINT"),
-                key_credential=AzureKeyCredential(os.getenv("AZURE_OPENAI_KEY")),
-                azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
-            )
         return RTClient(
-            key_credential=AzureKeyCredential(os.getenv("OPENAI_API_KEY")),
-            model=os.getenv("OPENAI_MODEL"),
+            url=os.getenv("AZURE_OPENAI_ENDPOINT"),
+            key_credential=AzureKeyCredential(os.getenv("AZURE_OPENAI_KEY")),
+            azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
         )
 
     async def send(self, message: WSMessage):
@@ -97,7 +93,7 @@ class RTSession:
 
     async def initialize(self):
         self.logger.debug("Configuring realtime session")
-        
+
         # Configure the RT client settings
         await self.client.configure(
             modalities={"text", "audio"},
@@ -114,7 +110,7 @@ class RTSession:
             "greeting": "You are now connected to the FastAPI server",
         }
         await self.send(greeting)
-        
+
         # Optionally send a system prompt if defined
         system_prompt = """
 You are an AI interviewer conducting a technical interview for a coding problem. Your role is to **guide the candidate** by clarifying doubts, asking insightful follow-up questions, and providing hints—without directly giving the answer.
@@ -136,11 +132,13 @@ You are an AI interviewer conducting a technical interview for a coding problem.
 Always **guide, not give**. Your goal is to **assess and improve problem-solving skills, not just correctness**.
 """
         if system_prompt:
-            system_message = RTMessage({
-                "type": "message",
-                "role": "system",
-                "content": [{"type": "input_text", "text": system_prompt}],
-            })
+            system_message = RTMessage(
+                {
+                    "type": "message",
+                    "role": "system",
+                    "content": [{"type": "input_text", "text": system_prompt}],
+                }
+            )
             await self.client.send_item(system_message)
             await self.client.generate_response()
             self.logger.debug("System prompt sent to the model")
@@ -162,11 +160,13 @@ Always **guide, not give**. Your goal is to **assess and improve problem-solving
 
             if parsed["type"] == "user_message":
                 await self.client.send_item(
-                    RTMessage({
-                        "type": "message",
-                        "role": "user",
-                        "content": [{"type": "input_text", "text": parsed["text"]}],
-                    })
+                    RTMessage(
+                        {
+                            "type": "message",
+                            "role": "user",
+                            "content": [{"type": "input_text", "text": parsed["text"]}],
+                        }
+                    )
                 )
                 await self.client.generate_response()
                 self.logger.debug("User message processed successfully")
@@ -278,7 +278,7 @@ async def websocket_endpoint(websocket: WebSocket):
     logger.info("New WebSocket connection established")
 
     async with RTSession(websocket, os.getenv("BACKEND")) as session:
-        #try:
+        try:
             await session.initialize()
 
             while websocket.client_state != WebSocketState.DISCONNECTED:
@@ -287,9 +287,9 @@ async def websocket_endpoint(websocket: WebSocket):
                     await session.handle_binary_message(message["bytes"])
                 elif "text" in message:
                     await session.handle_text_message(message["text"])
-        #except Exception as e:
-            #logger.error(f"WebSocket error: {e}")
-        #finally:
+        except Exception as e:
+            logger.error(f"WebSocket error: {e}")
+        finally:
             if websocket.client_state == WebSocketState.CONNECTED:
                 await websocket.close()
             logger.info("WebSocket connection closed")

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Clock, ArrowLeft } from 'lucide-react';
 import './RecordingsPage.css';

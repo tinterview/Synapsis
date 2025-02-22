@@ -3,20 +3,7 @@
   background-color: var(--background-color, #f8f9fa);
   display: flex;
   flex-direction: column;
-}
-
-:root {
-  --primary-color: #4f46e5;
-  --primary-hover: #4338ca;
-  --background-color: #f8f9fa;
-  --surface-color: #ffffff;
-  --text-primary: #1a1a1a;
-  --text-secondary: #4a4a4a;
-  --border-color: #e0e0e0;
-  --success-color: #059669;
-  --error-color: #dc2626;
-  --warning-color: #eab308;
-  --border-radius: 8px;
+  transition: all 0.3s ease;
 }
 
 .dark {
@@ -25,12 +12,13 @@
   --text-primary: #ffffff;
   --text-secondary: #a0a0a0;
   --border-color: #404040;
+  --hover-bg: rgba(255, 255, 255, 0.05);
 }
 
 /* Header Styles */
 .welcome-header {
-  background-color: var(--surface-color);
-  border-bottom: 1px solid var(--border-color);
+  background-color: var(--surface-color, #ffffff);
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
   padding: 1.25rem 2.5rem;
   margin-bottom: 2rem;
 }
@@ -60,7 +48,7 @@
 .welcome-header h1 {
   font-size: 1.75rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-primary, #1a1a1a);
   margin: 0;
   text-align: center;
 }
@@ -77,6 +65,7 @@
   flex: 1;
 }
 
+/* Section Titles */
 .section-title {
   font-size: 1.5rem;
   font-weight: 600;
@@ -84,25 +73,32 @@
   margin: 0 0 1.25rem 0;
 }
 
+/* Left Column */
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
 /* Metrics Grid */
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.25rem;
+  height: calc(100% - 3rem); /* Adjust for section title */
 }
 
-/* Metric Card */
 .metric-card {
-  background-color: var(--surface-color);
+  background-color: var(--surface-color, #ffffff);
   border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--border-color);
-  height: 220px;
+  padding: 1.5rem 1.5rem 2rem;
   display: flex;
   flex-direction: column;
-  cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-color, #e0e0e0);
+  height: 220px; /* Increased height */
 }
 
 .metric-card:hover {
@@ -127,33 +123,30 @@
 
 /* Progress Ring */
 .progress-container {
+  position: relative;
   width: 120px;
   height: 120px;
-  position: relative;
 }
 
 .progress-ring {
   transform: rotate(-90deg);
+  transition: all 0.3s ease;
 }
 
 .progress-ring-circle-bg {
   stroke: var(--border-color);
-  stroke-width: 8;
-  fill: none;
+  transition: stroke 0.3s ease;
 }
 
 .progress-ring-circle {
-  stroke-width: 8;
-  stroke-linecap: round;
-  fill: none;
   transition: stroke-dashoffset 1s ease-in-out;
 }
 
-/* Text in Progress Ring */
 .progress-value {
   font-size: 2rem;
   font-weight: 600;
   transform: rotate(90deg);
+  font-family: 'Inter', -apple-system, sans-serif;
 }
 
 .progress-unit {
@@ -163,47 +156,24 @@
   opacity: 0.8;
 }
 
-/* Metric Display */
-.metric-display {
-  position: relative;
-  width: 100%;
-  height: 100%;
+.progress-total {
+  font-size: 0.875rem;
+  font-weight: 500;
+  transform: rotate(90deg);
+  opacity: 0.6;
 }
 
-.circular-view {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-.numeric-view {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+/* Right Column */
+.right-column {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-.metric-display.hovered .circular-view {
-  opacity: 0;
-  visibility: hidden;
-}
-
-.metric-display.hovered .numeric-view {
-  opacity: 1;
-  visibility: visible;
+.content-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 1.27rem;
 }
 
 /* Problems Section */
@@ -215,20 +185,24 @@
 }
 
 .problem-card {
-  background-color: var(--surface-color);
+  background-color: var(--surface-color, #ffffff);
   border-radius: 12px;
   padding: 1.25rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-color, #e0e0e0);
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .problem-card:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.problem-content {
+  flex: 1;
 }
 
 .problem-header {
@@ -283,10 +257,10 @@
   border-radius: 6px;
   border: none;
   cursor: pointer;
+  transition: all 0.2s ease;
   background-color: #4f46e5;
   color: white;
   width: fit-content;
-  transition: background-color 0.2s ease;
 }
 
 .try-button:hover {
@@ -319,11 +293,11 @@
   border-radius: 8px;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: all 0.2s ease;
 }
 
 .watch-videos-btn:hover {
@@ -341,7 +315,7 @@
   transform: translateX(4px);
 }
 
-/* Footer */
+/* Home Footer */
 .home-footer {
   text-align: center;
   padding: 1.25rem;
@@ -351,9 +325,25 @@
   margin-top: 2rem;
 }
 
-/* Dark Mode Progress Ring */
+/* Dark Mode Adjustments */
 .dark .progress-ring-circle-bg {
   stroke: rgba(255, 255, 255, 0.1);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.metric-card, .problem-card, .videos-section {
+  animation: fadeIn 0.3s ease-out;
 }
 
 /* Responsive Design */
@@ -366,6 +356,10 @@
   .metrics-grid {
     max-width: 800px;
     margin: 0 auto;
+  }
+
+  .videos-section {
+    margin-top: 1.5rem;
   }
 }
 
@@ -394,19 +388,4 @@
   .metric-card {
     height: 200px;
   }
-}
-
-/* Big Number Display */
-.big-number {
-  font-size: 2.5rem;
-  font-weight: 700;
-  line-height: 1;
-  display: flex;
-  align-items: baseline;
-  gap: 0.25rem;
-}
-
-.unit {
-  font-size: 1rem;
-  opacity: 0.8;
 }

@@ -1,0 +1,19 @@
+# conda env create -f environment.yml
+name: tinterview
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.12
+  - numpy
+  - pandas
+  - fastapi
+  - pip
+  - setuptools>=65
+  - wheel
+  - pip:
+      - langchain-openai
+      - openai-whisper
+      - openai
+      - openai[tts]
+

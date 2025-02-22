@@ -53,6 +53,7 @@ WSMessage = Union[TextDelta, Transcription, UserMessage, ControlMessage]
 
 class RTSession:
     def __init__(self, websocket: WebSocket, backend: str | None):
+        print(f"backend: {backend}")
         self.session_id = str(uuid.uuid4())
         self.websocket = websocket
         self.logger = logger.bind(session_id=self.session_id)
@@ -73,8 +74,8 @@ class RTSession:
         if backend == "azure":
             return RTClient(
                 url=os.getenv("AZURE_OPENAI_ENDPOINT"),
-                key_credential=DefaultAzureCredential(),
-                deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+                key_credential=AzureKeyCredential(os.getenv("AZURE_OPENAI_KEY")),
+                azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
             )
         return RTClient(
             key_credential=AzureKeyCredential(os.getenv("OPENAI_API_KEY")),
@@ -91,7 +92,7 @@ class RTSession:
         self.logger.debug("Configuring realtime session")
         await self.client.configure(
             modalities={"text", "audio"},
-            voice="coral",
+            voice="alloy",
             input_audio_format="pcm16",
             input_audio_transcription=InputAudioTranscription(model="whisper-1"),
             turn_detection=ServerVAD(),

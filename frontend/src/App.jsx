@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import CodingInterface from './components/CodingInterface';
 import HomeScreen from './components/HomeScreen';
+import RecordingsPage from './components/RecordingsPage';
 import './App.css';
 
 const App = () => {
@@ -45,46 +46,57 @@ const App = () => {
     setCurrentScreen('home');
   };
 
+  const handleRecordingsClick = () => {
+    setCurrentScreen('recordings');
+  };
+
+  const handleEndInterview = () => {
+    setCurrentScreen('recordings');
+  };
+
   // Loading screen render
   if (isLoading) {
     return (
-      <div className="loading-screen">
+      <div className={`loading-screen ${isDarkMode ? 'dark-mode' : ''}`}>
         <div className="loading-spinner"></div>
         <p>Loading AI Coding Assistant...</p>
       </div>
     );
   }
 
-  // Main application render
   return (
     <div className={`app ${isDarkMode ? 'dark-mode' : ''}`}>
-      {/* Theme Toggle Button */}
       <button
         className="theme-toggle"
         onClick={toggleDarkMode}
         aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
       >
-        {isDarkMode ? '☀️' : '🌙'}
+        {/* {isDarkMode ? '☀️' : '🌙'} */}
       </button>
 
-      {/* Main Content */}
-      <main className="main-container">
-        {currentScreen === 'home' ? (
-          <HomeScreen 
-            onProblemSelect={handleProblemSelect} 
-            isDarkMode={isDarkMode} 
-          />
-        ) : (
-          <div className="coding-container">
-            <button className="back-button" onClick={handleBackToHome}>
-              ← Back to Home
-            </button>
-            <CodingInterface />
-          </div>
-        )}
-      </main>
+      {currentScreen === 'home' && (
+        <HomeScreen 
+          onProblemSelect={handleProblemSelect}
+          isDarkMode={isDarkMode}
+          onRecordingsClick={handleRecordingsClick}
+        />
+      )}
 
-      {/* Footer */}
+      {currentScreen === 'coding' && (
+        <CodingInterface 
+          onBackClick={handleBackToHome}
+          onEndInterview={handleEndInterview}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
+      {currentScreen === 'recordings' && (
+        <RecordingsPage 
+          onBackClick={handleBackToHome}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
       <footer className="app-footer">
         <p>AI Coding Assistant © 2024</p>
       </footer>

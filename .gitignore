@@ -26,3 +26,4 @@ dist-ssr
 # Ignore .venv and .env directories
 .venv
 .env
+.ruff_cashe

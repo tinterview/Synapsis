@@ -1,39 +1,52 @@
 import os
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import AzureChatOpenAI  # Updated import
 from langchain.schema import SystemMessage, HumanMessage
 from pydantic import BaseModel, Field
-from typing import Dict, List
+from typing import Dict
 
-# Set your OpenAI API key
-os.environ["OPENAI_API_KEY"] = "your-openai-api-key"
+# Set your Azure OpenAI API environment variables
+# os.environ["AZURE_OPENAI_ENDPOINT"] = "https://sanchar-aoai-eastus.openai.azure.com"  # Removed trailing slash
+# os.environ["AZURE_OPENAI_KEY"] = "2b1e15adc48d44eebc663af4ff7ebd2c"
+# os.environ["AZURE_OPENAI_DEPLOYMENT"] = "gpt-4o-mini-phack"
+# os.environ["AZURE_API_VERSION"] = "2024-05-01-preview"
+endpoint =  "https://sanchar-aoai-eastus.openai.azure.com"
+deployment = "gpt-4o-mini-phack"
+subscription_key =  "2b1e15adc48d44eebc663af4ff7ebd2c"
+api_version="2024-05-01-preview"
 
-# Define the AI Judge Evaluation Format
+
+# Define structured evaluation format
 class InterviewEvaluation(BaseModel):
-    correctness: float = Field(..., description="Score (0-10) for whether the code is correct.")
+    correctness: float = Field(..., description="Score (0-10) for correctness of the solution.")
     efficiency: float = Field(..., description="Score (0-10) for time and space complexity.")
-    readability: float = Field(..., description="Score (0-10) for clean, readable code.")
-    approach: float = Field(..., description="Score (0-10) for logical problem-solving approach.")
+    readability: float = Field(..., description="Score (0-10) for code structure and clarity.")
+    approach: float = Field(..., description="Score (0-10) for the candidate's problem-solving approach.")
     edge_cases: float = Field(..., description="Score (0-10) for handling edge cases.")
-    clarity: float = Field(..., description="Score (0-10) for clear verbal explanations.")
-    conciseness: float = Field(..., description="Score (0-10) for concise communication.")
-    ai_interaction: int = Field(..., description="Number of times AI hints were used.")
-    speed: float = Field(..., description="Score (0-10) based on time taken.")
-    iterations: int = Field(..., description="Number of significant code revisions.")
-    final_score: float = Field(..., description="Overall performance score (0-10).")
-    feedback_summary: str = Field(..., description="Detailed performance review.")
+    clarity: float = Field(..., description="Score (0-10) for explaining their approach.")
+    conciseness: float = Field(..., description="Score (0-10) for clear and concise communication.")
+    ai_interaction: int = Field(..., description="Number of AI hints used.")
+    speed: float = Field(..., description="Score (0-10) for speed in solving the problem.")
+    iterations: int = Field(..., description="Number of major code revisions.")
+    final_score: float = Field(..., description="Overall performance rating (0-10).")
+    feedback_summary: str = Field(..., description="Detailed review of the candidate's performance.")
 
-# Initialize GPT-4 AI Model
-llm = ChatOpenAI(model_name="gpt-4-turbo", temperature=0)
+# Initialize Azure OpenAI model
+llm = AzureChatOpenAI(
+    deployment_name=deployment,
+    openai_api_key=subscription_key,
+    azure_endpoint=endpoint,
+    api_version=api_version
+)
 
 def evaluate_interview(leetcode_question: str, interview_transcript: str, candidate_solution: str) -> Dict:
-    """Generates AI evaluation of the interview performance."""
+    """Uses Azure OpenAI to evaluate the candidate's interview performance."""
     
     system_prompt = """
-    You are an AI Judge evaluating a technical interview. 
-    Your task is to analyze the candidate's problem-solving approach, coding efficiency, clarity of communication, 
-    and ability to handle the problem under constraints.
+    You are an AI Judge evaluating a technical interview.
+    Your job is to assess problem-solving skills, coding efficiency, clarity of communication,
+    and ability to solve the problem efficiently.
     
-    Provide structured scores from 0 to 10 for each category and a detailed feedback summary.
+    Provide structured scores from 0 to 10 and a detailed feedback summary.
     """
 
     human_prompt = f"""
@@ -49,16 +62,16 @@ def evaluate_interview(leetcode_question: str, interview_transcript: str, candid
     ## Evaluation Criteria:
     - Correctness: Is the final code logically correct?
     - Efficiency: Is the solution optimized for time and space complexity?
-    - Readability: Is the code clean, well-formatted, and easy to understand?
-    - Approach: Did the candidate follow a structured problem-solving approach?
+    - Readability: Is the code clean and well-structured?
+    - Approach: Did the candidate take a structured approach to solving the problem?
     - Edge Cases: Did they handle all edge cases properly?
     - Clarity: How well did they explain their thought process?
-    - Conciseness: Were their explanations concise?
-    - AI Interaction: How many AI hints did they use?
-    - Speed: How quickly did they reach a working solution?
-    - Iterations: How many times did they significantly change their approach?
+    - Conciseness: Were their explanations clear and to the point?
+    - AI Interaction: How many AI hints did they require?
+    - Speed: How fast did they solve the problem?
+    - Iterations: How many times did they modify their approach?
     - Final Score: Overall performance rating.
-    - Feedback Summary: A detailed analysis of strengths and weaknesses.
+    - Feedback Summary: Strengths, weaknesses, and areas for improvement.
 
     ## Output Format:
     Return a JSON object following this schema:
@@ -80,14 +93,25 @@ def evaluate_interview(leetcode_question: str, interview_transcript: str, candid
     ```
     """
 
-    # Run LLM
-    response = llm.predict_messages([
+    # Run the AI Judge on Azure OpenAI
+    response = llm.invoke([
         SystemMessage(content=system_prompt),
         HumanMessage(content=human_prompt)
     ])
 
-    # Convert to structured JSON
-    evaluation = InterviewEvaluation.parse_raw(response.content)
+    # Extract JSON from the response
+    content = response.content
+    # Remove markdown code block formatting if present
+    if "```json" in content:
+        content = content.split("```json")[1]
+        content = content.split("```")[0]
+    elif "```" in content:
+        content = content.split("```")[1]
+        content = content.split("```")[0]
+
+    # Clean the content and parse it
+    content = content.strip()
+    evaluation = InterviewEvaluation.model_validate_json(content)  # Updated from parse_raw
     return evaluation.dict()
 
 # Example Usage:

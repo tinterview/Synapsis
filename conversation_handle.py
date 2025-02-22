@@ -17,6 +17,9 @@ API_VERSION = "2024-12-17"  # Ensure this matches your API version
 
 # WebSocket URL
 ws_uri = f"wss://{AZURE_OPENAI_ENDPOINT}/openai/realtime?api-version={API_VERSION}&deployment={AZURE_OPENAI_DEPLOYMENT}"
+ws_uri = "wss://sanch-m751m6ic-eastus2.openai.azure.com/openai/realtime?api-version=2024-12-17&deployment=gpt-4o-mini-realtime-preview"
+
+print(ws_uri)
 
 # Authentication headers
 headers = {

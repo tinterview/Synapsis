@@ -12,7 +12,7 @@ from io import BytesIO
 # Environment variables (Set these before running)
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_KEY")
-AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
+AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 API_VERSION = "2024-12-17"  # Ensure this matches your API version
 
 # WebSocket URL
@@ -111,7 +111,7 @@ def play_audio(wav_bytes):
 
 
 async def converse_with_ai():
-    async with websockets.connect(ws_uri, extra_headers=headers) as websocket:
+    async with websockets.connect(ws_uri, additional_headers=headers) as websocket:
         # Send system message with prompt and problem statement
         system_message = {
             "type": "system",

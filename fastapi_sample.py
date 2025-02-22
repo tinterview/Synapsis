@@ -22,6 +22,13 @@ from rtclient import (
 
 load_dotenv()
 
+# Add this helper class at the top of the file (e.g., after your imports)
+class RTMessage(dict):
+    def __getattr__(self, name):
+        return self.get(name)
+    def __setattr__(self, name, value):
+        self[name] = value
+
 
 class TextDelta(TypedDict):
     id: str
@@ -90,6 +97,8 @@ class RTSession:
 
     async def initialize(self):
         self.logger.debug("Configuring realtime session")
+        
+        # Configure the RT client settings
         await self.client.configure(
             modalities={"text", "audio"},
             voice="alloy",
@@ -98,12 +107,44 @@ class RTSession:
             turn_detection=ServerVAD(),
         )
 
+        # Send a greeting to the client
         greeting: ControlMessage = {
             "type": "control",
             "action": "connected",
             "greeting": "You are now connected to the FastAPI server",
         }
         await self.send(greeting)
+        
+        # Optionally send a system prompt if defined
+        system_prompt = """
+You are an AI interviewer conducting a technical interview for a coding problem. Your role is to **guide the candidate** by clarifying doubts, asking insightful follow-up questions, and providing hints—without directly giving the answer.
+
+## **Guidelines**
+- **DO NOT** directly provide the correct code or solution.
+- **DO NOT** explicitly state the optimal algorithm or approach.
+- **DO** ask leading questions to help the candidate think critically.
+- **DO** provide small hints or explain relevant concepts if the candidate is stuck.
+- **DO** adapt your responses based on the candidate’s progress and explanations.
+- **DO** probe deeper if the candidate gives an incomplete or incorrect explanation.
+
+## **Interaction Style**
+- Keep responses **concise** but **engaging**.
+- Use **Socratic questioning** (e.g., *“What happens if the input is very large?”*).
+- Encourage the candidate to **explain their reasoning aloud**.
+- Maintain a professional yet conversational tone.
+
+Always **guide, not give**. Your goal is to **assess and improve problem-solving skills, not just correctness**.
+"""
+        if system_prompt:
+            system_message = RTMessage({
+                "type": "message",
+                "role": "system",
+                "content": [{"type": "input_text", "text": system_prompt}],
+            })
+            await self.client.send_item(system_message)
+            await self.client.generate_response()
+            self.logger.debug("System prompt sent to the model")
+
         self.logger.debug("Realtime session configured successfully")
         asyncio.create_task(self.start_event_loop())
 
@@ -121,11 +162,11 @@ class RTSession:
 
             if parsed["type"] == "user_message":
                 await self.client.send_item(
-                    {
+                    RTMessage({
                         "type": "message",
                         "role": "user",
                         "content": [{"type": "input_text", "text": parsed["text"]}],
-                    }
+                    })
                 )
                 await self.client.generate_response()
                 self.logger.debug("User message processed successfully")
@@ -237,7 +278,7 @@ async def websocket_endpoint(websocket: WebSocket):
     logger.info("New WebSocket connection established")
 
     async with RTSession(websocket, os.getenv("BACKEND")) as session:
-        try:
+        #try:
             await session.initialize()
 
             while websocket.client_state != WebSocketState.DISCONNECTED:
@@ -246,9 +287,9 @@ async def websocket_endpoint(websocket: WebSocket):
                     await session.handle_binary_message(message["bytes"])
                 elif "text" in message:
                     await session.handle_text_message(message["text"])
-        except Exception as e:
-            logger.error(f"WebSocket error: {e}")
-        finally:
+        #except Exception as e:
+            #logger.error(f"WebSocket error: {e}")
+        #finally:
             if websocket.client_state == WebSocketState.CONNECTED:
                 await websocket.close()
             logger.info("WebSocket connection closed")

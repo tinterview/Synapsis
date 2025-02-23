@@ -133,7 +133,7 @@ def evaluate_conversation(conversation_file: str) -> Dict:
 result = evaluate_conversation("responses.json")
 
 # Save the result in interview_analysis.json, prepending to any existing list.
-analysis_file = "generic-frontend/interview_analysis.json"
+analysis_file = "generic-frontend/public/interview_analysis.json"
 if os.path.exists(analysis_file):
     with open(analysis_file, "r", encoding="utf-8") as f:
         try:

@@ -337,6 +337,11 @@ async def websocket_endpoint(websocket: WebSocket):
             with open("responses.json", "w") as f:
                 json.dump(responses, f)
 
+            # Run a subprocess to call "uv run final_llm.py" to evaluate the conversation
+            # and store the result in interview_analysis.json
+            import subprocess
+            subprocess.run(["uv run", "final_llm.py"])
+
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8080"))

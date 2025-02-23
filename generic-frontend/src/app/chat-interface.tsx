@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Player, Recorder } from "@/lib/audio";
 import { WebSocketClient } from "@/lib/client";
 import SessionMetrics from "@/components/ui/session-metrics";
+import InterviewAnalysis from '@/components/ui/interview-analysis';
 
 interface Message {
   id: string;
@@ -91,6 +92,9 @@ const ChatInterface: React.FC = () => {
   const [hasError, setHasError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [sessionStartTime] = useState<number>(Date.now());
+  const [showAnalysis, setShowAnalysis] = useState<boolean>(false);
+  const [analysisData, setAnalysisData] = useState<any>(null);
+  const pollInterval = useRef<NodeJS.Timeout | null>(null);
 
   const webSocketClient = useRef<WebSocketClient | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -249,6 +253,11 @@ const ChatInterface: React.FC = () => {
     setMessages([]);
     setHasError(false);
     setErrorMessage("");
+
+    // Start polling for analysis file
+    if (!pollInterval.current) {
+      pollInterval.current = setInterval(checkForAnalysisFile, 1000); // Check every second
+    }
   };
 
   const sendMessage = async (): Promise<void> => {
@@ -326,6 +335,24 @@ const ChatInterface: React.FC = () => {
     }
   };
 
+  const checkForAnalysisFile = async () => {
+    try {
+      const response = await fetch('/interview_analysis.json');
+      if (response.ok) {
+        const data = await response.json();
+        setAnalysisData(data[0]); // Get first object from array
+        setShowAnalysis(true);
+        // Clear polling interval once we have the data
+        if (pollInterval.current) {
+          clearInterval(pollInterval.current);
+          pollInterval.current = null;
+        }
+      }
+    } catch (error) {
+      console.log('Analysis file not ready yet');
+    }
+  };
+
   useEffect(() => {
     return () => {
       disconnect();
@@ -338,6 +365,14 @@ const ChatInterface: React.FC = () => {
       handleConnect();
     }
   }, []); // Empty dependency array means this runs once on mount
+
+  useEffect(() => {
+    return () => {
+      if (pollInterval.current) {
+        clearInterval(pollInterval.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -483,6 +518,9 @@ const ChatInterface: React.FC = () => {
         </div>
       </div>
     </div>
+    {showAnalysis && analysisData && (
+      <InterviewAnalysis data={analysisData} />
+    )}
   </div>
 );
 };

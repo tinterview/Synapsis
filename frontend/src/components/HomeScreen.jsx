@@ -1,3 +1,4 @@
+// HomeScreen.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';  
 import './HomeScreen.css';
@@ -7,9 +8,9 @@ import { useUser } from './UserProvider';
 const HomeScreen = ({ isDarkMode }) => {
   const navigate = useNavigate();
   const { user } = useUser();
-  const [loading, setLoading] = useState(true); // Loading state
+  const [loading, setLoading] = useState(true);
+  const [hoveredMetric, setHoveredMetric] = useState(null);
 
-  // Simulate loading effect until user is available
   useEffect(() => {
     if (user) {
       setLoading(false);
@@ -49,7 +50,7 @@ const HomeScreen = ({ isDarkMode }) => {
             <img src={logo} alt="AI Coding Assistant" className="logo-image" />
           </div>
           {loading ? (
-            <h1>Loading...</h1>  // Show loading text while fetching user data
+            <h1>Loading...</h1>
           ) : (
             <h1>Welcome, {user?.name}</h1>
           )}
@@ -59,7 +60,7 @@ const HomeScreen = ({ isDarkMode }) => {
       {loading ? (
         <div className="loading-container">
           <p>Fetching user data...</p>
-          <div className="spinner"></div> {/* Optional spinner */}
+          <div className="spinner"></div>
         </div>
       ) : (
         <main className="main-content">
@@ -67,15 +68,31 @@ const HomeScreen = ({ isDarkMode }) => {
             <h2 className="section-title">User Metrics</h2>
             <section className="metrics-grid">
               {metrics.map((metric, index) => (
-                <div key={index} className="metric-card">
+                <div 
+                  key={index} 
+                  className="metric-card"
+                  onMouseEnter={() => setHoveredMetric(index)}
+                  onMouseLeave={() => setHoveredMetric(null)}
+                >
                   <h3 className="metric-title">{metric.title}</h3>
                   <div className="metric-content">
                     <div className="progress-container">
-                      <div className="metric-display">
+                      <div className={`metric-display ${hoveredMetric === index ? 'hovered' : ''}`}>
                         <div className="circular-view">
                           <svg className="progress-ring" width="120" height="120" viewBox="0 0 120 120">
                             <circle className="progress-ring-circle-bg" cx="60" cy="60" r="35" fill="none" strokeWidth="8"/>
-                            <circle className="progress-ring-circle" cx="60" cy="60" r="35" fill="none" stroke={metric.color} strokeWidth="8" strokeLinecap="round" strokeDasharray="219.9" strokeDashoffset={(1 - metric.percentage / 100) * 219.9}/>
+                            <circle 
+                              className="progress-ring-circle" 
+                              cx="60" 
+                              cy="60" 
+                              r="35" 
+                              fill="none" 
+                              stroke={metric.color} 
+                              strokeWidth="8" 
+                              strokeLinecap="round" 
+                              strokeDasharray="219.9" 
+                              strokeDashoffset={(1 - metric.percentage / 100) * 219.9}
+                            />
                             <text x="60" y="60" className="progress-value" fill={metric.color} textAnchor="middle" dominantBaseline="middle">
                               {metric.value}
                             </text>
@@ -88,7 +105,11 @@ const HomeScreen = ({ isDarkMode }) => {
                         </div>
                         <div className="numeric-view">
                           <span className="big-number" style={{ color: metric.color }}>
-                            {metric.value}{metric.unit && <span className="unit">{metric.unit}</span>}
+                            {metric.value}
+                            {metric.unit && <span className="unit">{metric.unit}</span>}
+                          </span>
+                          <span className="total-label" style={{ color: metric.color }}>
+                            of {metric.total}
                           </span>
                         </div>
                       </div>

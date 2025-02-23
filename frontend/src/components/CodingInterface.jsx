@@ -3,6 +3,107 @@ import Editor from '@monaco-editor/react';
 import { AlertCircle, Check, Clock, XCircle, Camera, Mic } from 'lucide-react';
 import './CodingInterface.css';
 
+const ClarificationChat = () => {
+  const [messages, setMessages] = useState([]);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState(null);
+  const [voices, setVoices] = useState([]);
+  const chatContainerRef = useRef(null);
+
+  useEffect(() => {
+    // Load available voices
+    const loadVoices = () => {
+      const availableVoices = window.speechSynthesis.getVoices();
+      setVoices(availableVoices);
+      if (availableVoices.length > 0) {
+        setSelectedVoice(availableVoices[0]);
+      }
+    };
+
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }, []);
+
+  const speak = (text) => {
+    if (!text) return;
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = selectedVoice;
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const stopSpeaking = () => {
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  };
+
+  const handleClarificationResponse = async (audioBlob) => {
+    try {
+      // Create FormData and append the audio file
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'clarification.webm');
+      
+      // Send to your backend for transcription
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await response.json();
+      
+      // Add the transcribed question to messages
+      setMessages(prev => [...prev, {
+        type: 'user',
+        content: data.transcript
+      }]);
+
+      // Add the AI response to messages
+      setMessages(prev => [...prev, {
+        type: 'assistant',
+        content: data.answer
+      }]);
+
+      // Speak the response
+      speak(data.answer);
+    } catch (error) {
+      console.error('Error processing clarification:', error);
+      setMessages(prev => [...prev, {
+        type: 'error',
+        content: 'Error processing your question. Please try again.'
+      }]);
+    }
+  };
+
+  return (
+    <div className="chat-section">
+      <div 
+        ref={chatContainerRef}
+        className="chat-messages-container"
+      >
+        {messages.map((message, index) => (
+          <div 
+            key={index} 
+            className={`message ${message.type}`}
+          >
+            <p>{message.content}</p>
+            {message.type === 'assistant' && (
+              <button
+                className="tts-button"
+                onClick={() => message.content && speak(message.content)}
+              >
+                {isSpeaking ? <Volume2Off size={16} /> : <Volume2 size={16} />}
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
   const codeTemplates = {
     python: {
@@ -147,15 +248,19 @@ const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
         };
         
         audioRecorderRef.current.onstop = () => {
-          const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          // Change the MIME type to match the actual recording format
+          const blob = new Blob(audioChunksRef.current, { 
+            type: 'audio/webm;codecs=opus'  // Use WebM format with Opus codec
+          });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
           const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-          a.download = `clarification-${timestamp}.webm`;
+          a.download = `clarification-${timestamp}.webm`;  // Change extension to .webm
           a.click();
           
           stream.getTracks().forEach(track => track.stop());
+          URL.revokeObjectURL(url);  // Clean up the URL object
         };
         
         audioRecorderRef.current.start();
@@ -526,12 +631,8 @@ const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
               <p className="interviewer-status">Technical Interviewer</p>
             </div>
           </div>
-          
-          <div className="chat-messages">
-            <div className="message interviewer">
-              <p>Hi! I'll be your interviewer today. Let's work on solving the FizzBuzz problem. Feel free to ask any questions!</p>
-            </div>
-          </div>
+
+          <ClarificationChat />
 
           <div className="video-container">
             <video 

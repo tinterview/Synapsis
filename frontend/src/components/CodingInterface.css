@@ -411,7 +411,6 @@
   padding: 0.75rem;
   overflow-y: auto;
   border: 1px solid var(--border-color);
-  min-height: 150px;
 }
 
 .message {
@@ -790,4 +789,67 @@
 .end-interview-btn {
   min-width: auto;
   padding: 0.4rem 1rem;
+}
+
+.chat-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 1rem 0;
+}
+
+.chat-messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  background: var(--background-color);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+}
+
+.message {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  position: relative;
+}
+
+.message.user {
+  background: var(--background-color);
+  margin-left: 2rem;
+}
+
+.message.assistant {
+  background: rgba(79, 70, 229, 0.1);
+  margin-right: 2rem;
+}
+
+.message.error {
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--error-color);
+}
+
+.tts-button {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 0.25rem;
+  border-radius: var(--border-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tts-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.dark-mode .tts-button:hover {
+  background: rgba(255, 255, 255, 0.05);
 }

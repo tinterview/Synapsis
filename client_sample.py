@@ -4,6 +4,7 @@
 import asyncio
 import os
 import sys
+import subprocess
 
 import numpy as np
 import soundfile as sf
@@ -30,6 +31,17 @@ def resample_audio(audio_data, original_sample_rate, target_sample_rate):
     resampled_audio = resample(audio_data, number_of_samples)
     return resampled_audio.astype(np.int16)
 
+def convert_webm_to_mp3(input_file, output_file):
+    command = [
+        "ffmpeg", 
+        "-i", input_file,     # specify the input
+        "-vn",                # no video
+        "-ab", "128k",        # audio bitrate
+        "-ar", "44100",       # audio sample rate
+        "-y",                 # overwrite existing files
+        output_file
+    ]
+    subprocess.run(command, check=True)
 
 async def send_audio(client: RTClient, audio_file_path: str):
     sample_rate = 24000
@@ -213,6 +225,11 @@ if __name__ == "__main__":
     file_path = sys.argv[1]
     out_dir = sys.argv[2]
     provider = sys.argv[3] if len(sys.argv) == 4 else "azure"
+
+    if file_path.endswith(".webm"):
+        mp3_path = file_path.replace(".webm", ".mp3")
+        convert_webm_to_mp3(file_path, mp3_path)
+        file_path = mp3_path
 
     if not os.path.isfile(file_path):
         print(f"File {file_path} does not exist")

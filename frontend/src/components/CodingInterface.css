@@ -752,3 +752,42 @@
 .modal-button:focus:not(:focus-visible) {
   box-shadow: none;
 }
+.clarify-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 1rem;
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+}
+
+.clarify-btn:hover:not(.recording) {
+  background-color: var(--primary-hover);
+}
+
+.clarify-btn.recording {
+  background-color: var(--error-color);
+  animation: pulse 2s infinite;
+}
+
+.clarify-btn.recording:hover {
+  background-color: #b91c1c;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Update existing run-btn and submit-btn styles to match */
+.run-btn,
+.submit-btn,
+.end-interview-btn {
+  min-width: auto;
+  padding: 0.4rem 1rem;
+}

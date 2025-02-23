@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
-import { AlertCircle, Check, Clock, XCircle, Camera } from 'lucide-react';
+import { AlertCircle, Check, Clock, XCircle, Camera, Mic } from 'lucide-react';
 import './CodingInterface.css';
-import ChatInterface from './chat-interface';
-
 
 const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
   const codeTemplates = {
@@ -18,35 +16,43 @@ const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
     }
   };
 
+  // All state variables
   const [language, setLanguage] = useState('python');
   const [userCode, setUserCode] = useState(codeTemplates.python.template);
   const [userInput, setUserInput] = useState('15');
   const [runOutput, setRunOutput] = useState(null);
   const [testResults, setTestResults] = useState(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [aiMessage, setAiMessage] = useState('Hello! I\'m here to help you solve the FizzBuzz problem. Let me know if you have any questions!');
+  const [isRecording, setIsRecording] = useState(true);
+  const [isClarifying, setIsClarifying] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [expandedTestCase, setExpandedTestCase] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [showEndConfirmation, setShowEndConfirmation] = useState(false);
 
+  // All refs
   const videoRef = useRef(null);
   const mediaRecorderRef = useRef(null);
-  const chunksRef = useRef([]);
+  const audioRecorderRef = useRef(null);
+  const videoChunksRef = useRef([]);
+  const audioChunksRef = useRef([]);
+  const mediaStreamRef = useRef(null);
 
+  // Language IDs for Judge0 API
   const languageIds = {
     python: 71,
     javascript: 63,
     java: 62
   };
 
+  // Test cases
   const testCases = [
     { id: 1, input: '3', expectedOutput: '[\'1\', \'2\', \'Fizz\']' },
     { id: 2, input: '5', expectedOutput: '[\'1\', \'2\', \'Fizz\', \'4\', \'Buzz\']' },
     { id: 3, input: '15', expectedOutput: '[\'1\', \'2\', \'Fizz\', \'4\', \'Buzz\', \'Fizz\', \'7\', \'8\', \'Fizz\', \'Buzz\', \'11\', \'Fizz\', \'13\', \'14\', \'FizzBuzz\']' }
   ];
 
+  // Timer effect
   useEffect(() => {
     const timer = setInterval(() => {
       setElapsedTime(prev => prev + 1);
@@ -54,30 +60,64 @@ const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
     return () => clearInterval(timer);
   }, []);
 
+  // Auto-start video recording effect
   useEffect(() => {
-    const startWebcam = async () => {
+    const startRecording = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
           video: true, 
           audio: true 
         });
+
+        mediaStreamRef.current = stream;
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
+
+        mediaRecorderRef.current = new MediaRecorder(stream);
+        videoChunksRef.current = [];
+        
+        mediaRecorderRef.current.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            videoChunksRef.current.push(e.data);
+          }
+        };
+        
+        mediaRecorderRef.current.onstop = () => {
+          const blob = new Blob(videoChunksRef.current, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'interview-recording.webm';
+          a.click();
+
+          if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach(track => track.stop());
+          }
+        };
+        
+        mediaRecorderRef.current.start();
+        setIsRecording(true);
       } catch (err) {
-        console.error("Error accessing webcam:", err);
+        console.error("Error starting recording:", err);
+        setIsRecording(false);
       }
     };
-    startWebcam();
 
-    // Cleanup function to stop all tracks when component unmounts
+    startRecording();
+
     return () => {
-      if (videoRef.current?.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+      if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stop();
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
       }
     };
   }, []);
 
+  // Time formatting helper
   const formatTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -85,12 +125,53 @@ const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
+  // Language change handler
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
     setLanguage(newLang);
     setUserCode(codeTemplates[newLang].template);
   };
 
+  // Clarification recording handler
+  const toggleClarification = async () => {
+    if (!isClarifying) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioRecorderRef.current = new MediaRecorder(stream);
+        audioChunksRef.current = [];
+        
+        audioRecorderRef.current.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
+        
+        audioRecorderRef.current.onstop = () => {
+          const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          a.download = `clarification-${timestamp}.webm`;
+          a.click();
+          
+          stream.getTracks().forEach(track => track.stop());
+        };
+        
+        audioRecorderRef.current.start();
+        setIsClarifying(true);
+      } catch (err) {
+        console.error("Error starting audio recording:", err);
+      }
+    } else {
+      if (audioRecorderRef.current) {
+        audioRecorderRef.current.stop();
+      }
+      setIsClarifying(false);
+    }
+  };
+
+  // Code submission helper
   const buildSubmissionCode = (code, language) => {
     if (language === 'python') {
       return `${code}\n\nif __name__ == '__main__':\n    import sys\n    n = int(sys.stdin.read().strip())\n    print(fizzbuzz(n))`;
@@ -102,6 +183,7 @@ const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
     return code;
   };
 
+  // Judge0 API handlers
   const submitToJudge0 = async (code, input) => {
     const finalCode = buildSubmissionCode(code, language);
     const response = await fetch('https://judge0-ce.p.rapidapi.com/submissions', {
@@ -130,6 +212,7 @@ const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
     return await response.json();
   };
 
+  // Run code handler
   const handleRun = async () => {
     setIsRunning(true);
     setRunOutput({
@@ -160,6 +243,7 @@ const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
     }
   };
 
+  // Submit code handler
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setTestResults({
@@ -197,12 +281,6 @@ const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
         running: false,
         cases: results
       });
-
-      const allPassed = results.every(result => result.status === 'passed');
-      setAiMessage(allPassed ? 
-        'Congratulations! All test cases passed. Great job!' :
-        'Some test cases failed. Check the details and try again.'
-      );
     } catch (error) {
       setTestResults({
         running: false,
@@ -217,45 +295,12 @@ const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
     }
   };
 
+  // Test case handlers
   const handleTestCaseClick = (testCaseId) => {
     setExpandedTestCase(expandedTestCase === testCaseId ? null : testCaseId);
   };
 
-  const toggleRecording = async () => {
-    if (!videoRef.current?.srcObject) return;
-
-    if (!isRecording) {
-      try {
-        const stream = videoRef.current.srcObject;
-        mediaRecorderRef.current = new MediaRecorder(stream);
-        chunksRef.current = [];
-        
-        mediaRecorderRef.current.ondataavailable = (e) => {
-          if (e.data.size > 0) {
-            chunksRef.current.push(e.data);
-          }
-        };
-        
-        mediaRecorderRef.current.onstop = () => {
-          const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'recorded-video.webm';
-          a.click();
-        };
-        
-        mediaRecorderRef.current.start();
-        setIsRecording(true);
-      } catch (err) {
-        console.error("Error starting recording:", err);
-      }
-    } else {
-      mediaRecorderRef.current?.stop();
-      setIsRecording(false);
-    }
-  };
-
+  // Interview end handlers
   const handleEndInterview = () => {
     setShowEndConfirmation(true);
   };
@@ -263,6 +308,12 @@ const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
   const confirmEndInterview = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
+    }
+    if (audioRecorderRef.current && isClarifying) {
+      audioRecorderRef.current.stop();
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
     }
     onEndInterview();
   };
@@ -355,6 +406,13 @@ const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
                   disabled={isRunning}
                 >
                   {isRunning ? 'Running...' : 'Run'}
+                </button>
+                <button 
+                  className={`clarify-btn ${isClarifying ? 'recording' : ''}`}
+                  onClick={toggleClarification}
+                >
+                  <Mic size={16} />
+                  {isClarifying ? 'End Clarification' : 'Clarify'}
                 </button>
                 <button 
                   className={`submit-btn ${isSubmitting ? 'submitting' : ''}`}
@@ -458,34 +516,35 @@ const CodingInterface = ({ onBackClick, onEndInterview, isDarkMode }) => {
           )}
         </section>
 
-        <section className="assistant-panel">
-          <div className="ai-header">
-            <div className="ai-avatar">
-              <img src="/api/placeholder/40/40" alt="AI Assistant" />
+        <section className="chat-panel">
+          <div className="interviewer-info">
+            <div className="interviewer-avatar">
+              <img src="/api/placeholder/40/40" alt="Interviewer" />
             </div>
-            <div className="ai-info">
-              <h3>AI Assistant</h3>
-              <p className="ai-status">Ready to help</p>
+            <div className="interviewer-details">
+              <h3>Joe Smith</h3>
+              <p className="interviewer-status">Technical Interviewer</p>
+            </div>
+          </div>
+          
+          <div className="chat-messages">
+            <div className="message interviewer">
+              <p>Hi! I'll be your interviewer today. Let's work on solving the FizzBuzz problem. Feel free to ask any questions!</p>
             </div>
           </div>
 
-          <ChatInterface />
-
-          <div className="webcam-container">
+          <div className="video-container">
             <video 
               ref={videoRef} 
-              className="webcam-preview" 
+              className="video-preview" 
               autoPlay 
               playsInline 
               muted
             />
-            <button 
-              className={`record-button ${isRecording ? 'recording' : ''}`}
-              onClick={toggleRecording}
-            >
-              <Camera size={16} />
-              {isRecording ? 'Stop Recording' : 'Start Recording'}
-            </button>
+            <div className="recording-status">
+              <span className={`status-indicator ${isRecording ? 'recording' : ''}`}></span>
+              {isRecording ? 'Recording in progress...' : 'Recording stopped'}
+            </div>
           </div>
         </section>
       </main>

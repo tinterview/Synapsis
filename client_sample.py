@@ -31,17 +31,22 @@ def resample_audio(audio_data, original_sample_rate, target_sample_rate):
     resampled_audio = resample(audio_data, number_of_samples)
     return resampled_audio.astype(np.int16)
 
+
 def convert_webm_to_mp3(input_file, output_file):
     command = [
-        "ffmpeg", 
-        "-i", input_file,     # specify the input
-        "-vn",                # no video
-        "-ab", "128k",        # audio bitrate
-        "-ar", "44100",       # audio sample rate
-        "-y",                 # overwrite existing files
-        output_file
+        "ffmpeg",
+        "-i",
+        input_file,  # specify the input
+        "-vn",  # no video
+        "-ab",
+        "128k",  # audio bitrate
+        "-ar",
+        "44100",  # audio sample rate
+        "-y",  # overwrite existing files
+        output_file,
     ]
     subprocess.run(command, check=True)
+
 
 async def send_audio(client: RTClient, audio_file_path: str):
     sample_rate = 24000

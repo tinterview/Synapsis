@@ -2,6 +2,8 @@ from langchain_openai import AzureChatOpenAI  # Updated import
 from langchain.schema import SystemMessage, HumanMessage
 from pydantic import BaseModel, Field
 from typing import Dict
+from pprint import pprint
+
 
 # Set your Azure OpenAI API environment variables
 # os.environ["AZURE_OPENAI_ENDPOINT"] = "https://sanchar-aoai-eastus.openai.azure.com"  # Removed trailing slash
@@ -146,8 +148,5 @@ candidate_solution = "def fizzBuzz(n): return ['Fizz' if i%3==0 else 'Buzz' if i
 evaluation_results = evaluate_interview(
     leetcode_question, interview_transcript, candidate_solution
 )
-
-# Print formatted results
-from pprint import pprint
 
 pprint(evaluation_results)

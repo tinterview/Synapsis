@@ -9,7 +9,6 @@ import asyncio
 from loguru import logger
 import os
 from dotenv import load_dotenv
-from azure.identity import DefaultAzureCredential
 from azure.core.credentials import AzureKeyCredential
 from rtclient import (
     InputAudioTranscription,
@@ -17,13 +16,17 @@ from rtclient import (
     ServerVAD,
     RTInputAudioItem,
     RTResponse,
-    RTAudioContent,    
+    RTAudioContent,
     UserMessageItem,
-    InputTextContentPart
+    InputTextContentPart,
 )
 
 
 load_dotenv()
+
+user_responses = [] # Store user responses
+model_responses = [] # Store model responses
+
 
 # Add this helper class at the top of the file (e.g., after your imports)
 class RTMessage(dict):
@@ -32,6 +35,7 @@ class RTMessage(dict):
 
     def __setattr__(self, name, value):
         self[name] = value
+
 
 class TextDelta(TypedDict):
     id: str
@@ -80,14 +84,12 @@ class RTSession:
     def _initialize_client(self, backend: str | None):
         self.logger.debug(f"Initializing RT client with backend: {backend}")
 
-        if backend == "azure":
-            return RTClient(url= "https://sanch-m751m6ic-eastus2.openai.azure.com/openai/realtime/",
-                key_credential = AzureKeyCredential("AQy8P8x5Gp0ZJ9c142ITx71PGcOSiKF8mNfbBiEspOIgOrNJrm7fJQQJ99BBACHYHv6XJ3w3AAAAACOGPeQS"),
-                azure_deployment= "gpt-4o-mini-realtime-preview-phack"
-            )
         return RTClient(
-            key_credential=AzureKeyCredential(os.getenv("OPENAI_API_KEY")),
-            model=os.getenv("OPENAI_MODEL"),
+            url="https://sanch-m751m6ic-eastus2.openai.azure.com/openai/realtime/",
+            key_credential=AzureKeyCredential(
+                "AQy8P8x5Gp0ZJ9c142ITx71PGcOSiKF8mNfbBiEspOIgOrNJrm7fJQQJ99BBACHYHv6XJ3w3AAAAACOGPeQS"
+            ),
+            azure_deployment="gpt-4o-mini-realtime-preview-phack",
         )
 
     async def send(self, message: WSMessage):
@@ -136,7 +138,7 @@ Always *guide, do not give answers. Your goal is to **assess the problem-solving
             input_audio_format="pcm16",
             input_audio_transcription=InputAudioTranscription(model="whisper-1"),
             turn_detection=ServerVAD(),
-            instructions=system_prompt 
+            instructions=system_prompt,
         )
 
         greeting: ControlMessage = {
@@ -147,51 +149,54 @@ Always *guide, do not give answers. Your goal is to **assess the problem-solving
 
         await self.send(greeting)
 
-          # Optionally send a system prompt if defined
-        #system_prompt = """
-#You are an AI interviewer conducting a technical interview for a coding problem. Your role is to *guide the candidate* by clarifying doubts, asking insightful follow-up questions, and providing hints—without directly giving the answer.
-#"""
-        #if system_prompt:
+        # Optionally send a system prompt if defined
+        # system_prompt = """
+        # You are an AI interviewer conducting a technical interview for a coding problem. Your role is to *guide the candidate* by clarifying doubts, asking insightful follow-up questions, and providing hints—without directly giving the answer.
+        # """
+        # if system_prompt:
         #    system_message = RTMessage(
-        #        {                    
+        #        {
         #            "type": "message",
         #            "role": "system",
         #            "content": [{"type": "input_text", "text": system_prompt}],
         #        }
         #    )
-            #await self.client.send_item(system_message)
-            #await self.client.generate_response()
+        # await self.client.send_item(system_message)
+        # await self.client.generate_response()
         #    self.logger.debug("System prompt sent to the model")
 
         self.logger.debug("Realtime session configured successfully")
         asyncio.create_task(self.start_event_loop())
 
-
     # Runs continuoisly receiving bytes from websocket and then sending audio stream to Azure Open AI
     async def handle_binary_message(self, message: bytes):
         try:
-            await self.client.send_audio(message)            
+            await self.client.send_audio(message)
         except Exception as error:
             self.logger.error(f"Failed to send audio data: {error}")
             raise
 
     async def handle_text_message(self, message: str):
-        try:            
+        try:
             parsed: WSMessage = json.loads(message)
             self.logger.debug(f"Received text message type: {parsed['type']}")
 
             if parsed["type"] == "user_message":
-                #Option 1 - works for one time
-                await self.client.send_item(item=UserMessageItem(content=[InputTextContentPart(text=parsed["text"])]))    
-                
-                #Option 2 - Erros about id 
-                #await self.client.send_item(
-                #    {                          
+                # Option 1 - works for one time
+                await self.client.send_item(
+                    item=UserMessageItem(
+                        content=[InputTextContentPart(text=parsed["text"])]
+                    )
+                )
+
+                # Option 2 - Erros about id
+                # await self.client.send_item(
+                #    {
                 #        "type": "message",
                 #        "role": "user",
                 #        "content": [{"type": "input_text", "text": parsed["text"]}],
                 #    }
-                #)
+                # )
                 await self.client.generate_response()
                 self.logger.debug("User message processed successfully")
         except Exception as error:
@@ -200,7 +205,7 @@ Always *guide, do not give answers. Your goal is to **assess the problem-solving
 
     async def handle_text_content(self, content):
         try:
-            content_id = f"{content.item_id}-{content.content_index}"            
+            content_id = f"{content.item_id}-{content.content_index}"
             async for text in content.text_chunks():
                 delta_message: TextDelta = {
                     "id": content_id,
@@ -219,22 +224,23 @@ Always *guide, do not give answers. Your goal is to **assess the problem-solving
 
     async def handle_audio_content(self, content: RTAudioContent):
         async def handle_audio_chunks():
-            print('3rd')
+            print("3rd")
             async for chunk in content.audio_chunks():
                 await self.send_binary(chunk)
 
         async def handle_audio_transcript():
             content_id = f"{content.item_id}-{content.content_index}"
             responseText = ""
-            async for chunk in content.transcript_chunks():                 
+            async for chunk in content.transcript_chunks():
                 await self.send(
                     {"id": content_id, "type": "text_delta", "delta": chunk}
                 )
-                responseText = responseText + chunk                              
+                responseText = responseText + chunk
             await self.send(
-                {"type": "control", "action": "text_done", "id": content_id}           
+                {"type": "control", "action": "text_done", "id": content_id}
             )
-            print ("AI Response Text: " + responseText)
+            print("AI Response Text: " + responseText)
+            model_responses.append(responseText)
 
         try:
             await asyncio.gather(handle_audio_chunks(), handle_audio_transcript())
@@ -259,12 +265,14 @@ Always *guide, do not give answers. Your goal is to **assess the problem-solving
 
     # receives text spoken by user
     async def handle_input_audio(self, event: RTInputAudioItem):
-        try:            
-            print('2nd')
+        try:
+            print("2nd")
             await self.send({"type": "control", "action": "speech_started"})
             await event
-            #Prints user speech text
-            print ("User Question Text: " + event.transcript)
+            # Prints user speech text
+            if event.transcript:
+                print("User Question Text: " + event.transcript)
+            user_responses.append(event.transcript)
             transcription: Transcription = {
                 "id": event.id,
                 "type": "transcription",
@@ -323,6 +331,8 @@ async def websocket_endpoint(websocket: WebSocket):
             if websocket.client_state == WebSocketState.CONNECTED:
                 await websocket.close()
             logger.info("WebSocket connection closed")
+            print("User Responses: ", user_responses)
+            print("Model Responses: ", model_responses)
 
 
 if __name__ == "__main__":

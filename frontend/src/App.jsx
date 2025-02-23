@@ -33,7 +33,7 @@ const App = () => {
           onClick={toggleDarkMode}
           aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
-          {/* {isDarkMode ? '☀️' : '🌙'} */}
+          {isDarkMode ? '☀️' : '🌙'}
         </button>
 
         {/* Main Content */}
@@ -57,7 +57,7 @@ const App = () => {
 
         {/* Footer */}
         <footer className="app-footer">
-          <p>AI Coding Assistant © 2024</p>
+          <p>AI Coding Assistant © 2025</p>
         </footer>
       </div>
     </Router>

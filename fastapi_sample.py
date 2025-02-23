@@ -7,6 +7,7 @@ import json
 from typing import Union, Literal, TypedDict
 import asyncio
 from loguru import logger
+import subprocess
 import os
 from dotenv import load_dotenv
 from azure.core.credentials import AzureKeyCredential
@@ -313,6 +314,7 @@ app.add_middleware(
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     logger.info("New WebSocket connection established")
+    subprocess.run(["rm -f", "generic-frontend/public/interview_analysis.json"])
 
     async with RTSession(websocket, "azure") as session:
         try:
@@ -339,7 +341,6 @@ async def websocket_endpoint(websocket: WebSocket):
 
             # Run a subprocess to call "uv run final_llm.py" to evaluate the conversation
             # and store the result in interview_analysis.json
-            import subprocess
             subprocess.run(["uv run", "final_llm.py"])
 
 

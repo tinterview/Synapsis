@@ -332,6 +332,13 @@ const ChatInterface: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    // Auto-connect when component mounts
+    if (!isConnected && !isConnecting && validEndpoint) {
+      handleConnect();
+    }
+  }, []); // Empty dependency array means this runs once on mount
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Left Sidebar */}

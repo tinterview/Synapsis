@@ -1,52 +1,51 @@
-from langchain_openai import AzureChatOpenAI  # Updated import
-from langchain.schema import SystemMessage, HumanMessage
+import os
+import json
+from typing import Dict, List
 from pydantic import BaseModel, Field
-from typing import Dict
-from pprint import pprint
 
+from langchain_openai import AzureChatOpenAI
+from langchain.schema import SystemMessage, HumanMessage
 
-# Set your Azure OpenAI API environment variables
-# os.environ["AZURE_OPENAI_ENDPOINT"] = "https://sanchar-aoai-eastus.openai.azure.com"  # Removed trailing slash
-# os.environ["AZURE_OPENAI_KEY"] = "2b1e15adc48d44eebc663af4ff7ebd2c"
-# os.environ["AZURE_OPENAI_DEPLOYMENT"] = "gpt-4o-mini-phack"
-# os.environ["AZURE_API_VERSION"] = "2024-05-01-preview"
+# Azure OpenAI config
 endpoint = "https://sanchar-aoai-eastus.openai.azure.com"
 deployment = "gpt-4o-mini-phack"
 subscription_key = "2b1e15adc48d44eebc663af4ff7ebd2c"
 api_version = "2024-05-01-preview"
 
+# Define nested metrics format
+class ProblemSolving(BaseModel):
+    decomposition_and_structuring: int = Field(..., description="Dissects problems systematically into smaller parts.")
+    logical_progression_and_refinement: int = Field(..., description="Builds solutions step-by-step and refines them.")
+    edge_case_consideration: int = Field(..., description="Considers boundary and corner cases.")
 
-# Define structured evaluation format
-class InterviewEvaluation(BaseModel):
-    correctness: float = Field(
-        ..., description="Score (0-10) for correctness of the solution."
-    )
-    efficiency: float = Field(
-        ..., description="Score (0-10) for time and space complexity."
-    )
-    readability: float = Field(
-        ..., description="Score (0-10) for code structure and clarity."
-    )
-    approach: float = Field(
-        ..., description="Score (0-10) for the candidate's problem-solving approach."
-    )
-    edge_cases: float = Field(..., description="Score (0-10) for handling edge cases.")
-    clarity: float = Field(
-        ..., description="Score (0-10) for explaining their approach."
-    )
-    conciseness: float = Field(
-        ..., description="Score (0-10) for clear and concise communication."
-    )
-    ai_interaction: int = Field(..., description="Number of AI hints used.")
-    speed: float = Field(
-        ..., description="Score (0-10) for speed in solving the problem."
-    )
-    iterations: int = Field(..., description="Number of major code revisions.")
-    final_score: float = Field(..., description="Overall performance rating (0-10).")
-    feedback_summary: str = Field(
-        ..., description="Detailed review of the candidate's performance."
-    )
+class CommunicationAndClarity(BaseModel):
+    technical_explanation_depth: int = Field(..., description="Depth of technical explanations given.")
+    conciseness_vs_verbosity: int = Field(..., description="Balance between being concise or overly verbose.")
+    confidence_level: int = Field(..., description="Apparent confidence in communication.")
 
+class EngagementAndAdaptability(BaseModel):
+    interactivity_and_responsiveness: int = Field(..., description="Engagement with the interviewer and responsiveness.")
+    flexibility_in_thinking: int = Field(..., description="Ability to adapt thinking when new ideas are presented.")
+
+class StressHandling(BaseModel):
+    hesitation_and_filler_words: int = Field(..., description="Usage of hesitations and filler words (uh, um, like).")
+    panic_vs_composure: int = Field(..., description="Overall composure or panic under stress.")
+
+class MetaCognitiveAwareness(BaseModel):
+    self_correction_frequency: int = Field(..., description="Frequency of self-correction.")
+    debugging_thought_process: int = Field(..., description="Quality of debugging or critical thinking about own errors.")
+
+class PerformanceVsExpectations(BaseModel):
+    answer_speed_vs_quality: int = Field(..., description="Balance between speed of answers and their completeness.")
+    completeness_of_answers: int = Field(..., description="How thorough and complete the answers are.")
+
+class ConversationMetrics(BaseModel):
+    problem_solving: ProblemSolving
+    communication_and_clarity: CommunicationAndClarity
+    engagement_and_adaptability: EngagementAndAdaptability
+    stress_handling: StressHandling
+    meta_cognitive_awareness: MetaCognitiveAwareness
+    performance_vs_expectations: PerformanceVsExpectations
 
 # Initialize Azure OpenAI model
 llm = AzureChatOpenAI(
@@ -56,97 +55,99 @@ llm = AzureChatOpenAI(
     api_version=api_version,
 )
 
+def evaluate_conversation(conversation_file: str) -> Dict:
+    """
+    Reads a JSON file containing a list of [role, content] entries,
+    where role is either 'user' or 'model', then returns a JSON
+    with conversation metrics evaluated by the Azure OpenAI model.
+    """
+    with open(conversation_file, "r", encoding="utf-8") as f:
+        conversation_history = json.load(f)
 
-def evaluate_interview(
-    leetcode_question: str, interview_transcript: str, candidate_solution: str
-) -> Dict:
-    """Uses Azure OpenAI to evaluate the candidate's interview performance."""
+    # Convert the conversation list into a readable format
+    conversation_text = []
+    for entry in conversation_history:
+        role, content = entry
+        conversation_text.append(f"{role.upper()}: {content}")
 
+    # Prepare the prompts
     system_prompt = """
-    You are an AI Judge evaluating a technical interview.
-    Your job is to assess problem-solving skills, coding efficiency, clarity of communication,
-    and ability to solve the problem efficiently.
-    
-    Provide structured scores from 0 to 10 and a detailed feedback summary.
-    """
+    You are an AI Judge tasked with analyzing a conversation for:
+    1. Problem Solving
+    2. Communication and Clarity
+    3. Engagement and Adaptability
+    4. Stress Handling
+    5. Meta Cognitive Awareness
+    6. Performance vs Expectations
 
+    Return a JSON object with these fields:
+    {
+      "problem_solving": {
+        "decomposition_and_structuring": 0,
+        "logical_progression_and_refinement": 0,
+        "edge_case_consideration": 0
+      },
+      "communication_and_clarity": {
+        "technical_explanation_depth": 0,
+        "conciseness_vs_verbosity": 0,
+        "confidence_level": 0
+      },
+      "engagement_and_adaptability": {
+        "interactivity_and_responsiveness": 0,
+        "flexibility_in_thinking": 0
+      },
+      "stress_handling": {
+        "hesitation_and_filler_words": 0,
+        "panic_vs_composure": 0
+      },
+      "meta_cognitive_awareness": {
+        "self_correction_frequency": 0,
+        "debugging_thought_process": 0
+      },
+      "performance_vs_expectations": {
+        "answer_speed_vs_quality": 0,
+        "completeness_of_answers": 0
+      }
+    }
+    """
     human_prompt = f"""
-    ## LeetCode Question:
-    {leetcode_question}
-
-    ## Interview Transcript:
-    {interview_transcript}
-
-    ## Candidate's Final Code:
-    {candidate_solution}
-
-    ## Evaluation Criteria:
-    - Correctness: Is the final code logically correct?
-    - Efficiency: Is the solution optimized for time and space complexity?
-    - Readability: Is the code clean and well-structured?
-    - Approach: Did the candidate take a structured approach to solving the problem?
-    - Edge Cases: Did they handle all edge cases properly?
-    - Clarity: How well did they explain their thought process?
-    - Conciseness: Were their explanations clear and to the point?
-    - AI Interaction: How many AI hints did they require?
-    - Speed: How fast did they solve the problem?
-    - Iterations: How many times did they modify their approach?
-    - Final Score: Overall performance rating.
-    - Feedback Summary: Strengths, weaknesses, and areas for improvement.
-
-    ## Output Format:
-    Return a JSON object following this schema:
-    ```json
-    {{
-        "correctness": float,
-        "efficiency": float,
-        "readability": float,
-        "approach": float,
-        "edge_cases": float,
-        "clarity": float,
-        "conciseness": float,
-        "ai_interaction": int,
-        "speed": float,
-        "iterations": int,
-        "final_score": float,
-        "feedback_summary": str
-    }}
-    ```
+    Conversation History:
+    {chr(10).join(conversation_text)}
     """
 
-    # Run the AI Judge on Azure OpenAI
     response = llm.invoke(
         [SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)]
     )
-
-    # Extract JSON from the response
     content = response.content
-    # Remove markdown code block formatting if present
+
+    # Clean potential code fences
     if "```json" in content:
-        content = content.split("```json")[1]
-        content = content.split("```")[0]
+        content = content.split("```json")[1].split("```")[0]
     elif "```" in content:
-        content = content.split("```")[1]
-        content = content.split("```")[0]
+        content = content.split("```")[1].split("```")[0]
 
-    # Clean the content and parse it
-    content = content.strip()
-    evaluation = InterviewEvaluation.model_validate_json(
-        content
-    )  # Updated from parse_raw
-    return evaluation.dict()
+    metrics = ConversationMetrics.model_validate_json(content.strip())
+    return metrics.model_dump()
 
+# Example usage:
+result = evaluate_conversation("responses.json")
 
-# Example Usage:
-leetcode_question = "Given an integer n, return a string array where: ..."
-interview_transcript = (
-    "Interviewer: How would you solve this? Candidate: I think I should use a loop..."
-)
-candidate_solution = "def fizzBuzz(n): return ['Fizz' if i%3==0 else 'Buzz' if i%5==0 else str(i) for i in range(1, n+1)]"
+# Save the result in interview_analysis.json, prepending to any existing list.
+analysis_file = "generic-frontend/interview_analysis.json"
+if os.path.exists(analysis_file):
+    with open(analysis_file, "r", encoding="utf-8") as f:
+        try:
+            analysis_list = json.load(f)
+            if not isinstance(analysis_list, list):
+                analysis_list = []
+        except json.JSONDecodeError:
+            analysis_list = []
+else:
+    analysis_list = []
 
-# Run evaluation
-evaluation_results = evaluate_interview(
-    leetcode_question, interview_transcript, candidate_solution
-)
+analysis_list.insert(0, result)
 
-pprint(evaluation_results)
+with open(analysis_file, "w", encoding="utf-8") as f:
+    json.dump(analysis_list, f, indent=2)
+
+print(result)

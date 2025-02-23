@@ -24,8 +24,7 @@ from rtclient import (
 
 load_dotenv()
 
-user_responses = [] # Store user responses
-model_responses = [] # Store model responses
+responses = []  # Store conversation
 
 
 # Add this helper class at the top of the file (e.g., after your imports)
@@ -240,7 +239,7 @@ Always *guide, do not give answers. Your goal is to **assess the problem-solving
                 {"type": "control", "action": "text_done", "id": content_id}
             )
             print("AI Response Text: " + responseText)
-            model_responses.append(responseText)
+            responses.append(["model", responseText])
 
         try:
             await asyncio.gather(handle_audio_chunks(), handle_audio_transcript())
@@ -272,7 +271,7 @@ Always *guide, do not give answers. Your goal is to **assess the problem-solving
             # Prints user speech text
             if event.transcript:
                 print("User Question Text: " + event.transcript)
-            user_responses.append(event.transcript)
+            responses.append(["user", event.transcript])
             transcription: Transcription = {
                 "id": event.id,
                 "type": "transcription",
@@ -331,8 +330,12 @@ async def websocket_endpoint(websocket: WebSocket):
             if websocket.client_state == WebSocketState.CONNECTED:
                 await websocket.close()
             logger.info("WebSocket connection closed")
-            print("User Responses: ", user_responses)
-            print("Model Responses: ", model_responses)
+            print("Responses: ", responses)
+
+            # Store the responses in a file in /frontend to accessed
+            # by the frontend next.js code for metrics and analysis
+            with open("responses.json", "w") as f:
+                json.dump(responses, f)
 
 
 if __name__ == "__main__":

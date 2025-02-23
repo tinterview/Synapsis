@@ -1,0 +1,30 @@
+[
+  {
+    "problem_solving": {
+      "decomposition_and_structuring": 2,
+      "logical_progression_and_refinement": 2,
+      "edge_case_consideration": 2
+    },
+    "communication_and_clarity": {
+      "technical_explanation_depth": 2,
+      "conciseness_vs_verbosity": 2,
+      "confidence_level": 2
+    },
+    "engagement_and_adaptability": {
+      "interactivity_and_responsiveness": 2,
+      "flexibility_in_thinking": 2
+    },
+    "stress_handling": {
+      "hesitation_and_filler_words": 1,
+      "panic_vs_composure": 2
+    },
+    "meta_cognitive_awareness": {
+      "self_correction_frequency": 1,
+      "debugging_thought_process": 1
+    },
+    "performance_vs_expectations": {
+      "answer_speed_vs_quality": 2,
+      "completeness_of_answers": 2
+    }
+  }
+]

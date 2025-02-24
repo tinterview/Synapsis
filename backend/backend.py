@@ -27,8 +27,6 @@ load_dotenv()
 
 responses = []  # Store conversation
 
-
-# Add this helper class at the top of the file (e.g., after your imports)
 class RTMessage(dict):
     def __getattr__(self, name):
         return self.get(name)
@@ -85,11 +83,9 @@ class RTSession:
         self.logger.debug(f"Initializing RT client with backend: {backend}")
 
         return RTClient(
-            url="https://sanch-m751m6ic-eastus2.openai.azure.com/openai/realtime/",
-            key_credential=AzureKeyCredential(
-                "AQy8P8x5Gp0ZJ9c142ITx71PGcOSiKF8mNfbBiEspOIgOrNJrm7fJQQJ99BBACHYHv6XJ3w3AAAAACOGPeQS"
-            ),
-            azure_deployment="gpt-4o-mini-realtime-preview-phack",
+            url=os.getenv("AZURE_OPENAI_ENDPOINT") + "/openai/realtime/",
+            key_credential=AzureKeyCredential(os.getenv("AZURE_OPENAI_REALTIME_KEY")),
+            azure_deployment=os.getenv("AZURE_REALTIME_OPENAI_DEPLOYMENT"),
         )
 
     async def send(self, message: WSMessage):
@@ -148,22 +144,6 @@ Always *guide, do not give answers. Your goal is to **assess the problem-solving
         }
 
         await self.send(greeting)
-
-        # Optionally send a system prompt if defined
-        # system_prompt = """
-        # You are an AI interviewer conducting a technical interview for a coding problem. Your role is to *guide the candidate* by clarifying doubts, asking insightful follow-up questions, and providing hints—without directly giving the answer.
-        # """
-        # if system_prompt:
-        #    system_message = RTMessage(
-        #        {
-        #            "type": "message",
-        #            "role": "system",
-        #            "content": [{"type": "input_text", "text": system_prompt}],
-        #        }
-        #    )
-        # await self.client.send_item(system_message)
-        # await self.client.generate_response()
-        #    self.logger.debug("System prompt sent to the model")
 
         self.logger.debug("Realtime session configured successfully")
         asyncio.create_task(self.start_event_loop())
@@ -314,7 +294,7 @@ app.add_middleware(
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     logger.info("New WebSocket connection established")
-    subprocess.run(["rm -f", "generic-frontend/public/interview_analysis.json"])
+    subprocess.run(["rm", " -f", "frontend/public/interview_analysis.json"])
 
     async with RTSession(websocket, "azure") as session:
         try:
@@ -341,7 +321,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
             # Run a subprocess to call "uv run final_llm.py" to evaluate the conversation
             # and store the result in interview_analysis.json
-            subprocess.run(["uv run", "final_llm.py"])
+            subprocess.run(["uv", "run", "final_metrics.py"])
 
 
 if __name__ == "__main__":

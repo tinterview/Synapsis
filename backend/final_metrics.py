@@ -17,32 +17,43 @@ deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 subscription_key = os.getenv("AZURE_OPENAI_SUBSCRIPTION_KEY")
 api_version = "2024-05-01-preview"
 
+
 # Define metrics models
 class ProblemSolving(BaseModel):
     decomposition_and_structuring: int = Field(..., description="Dissects problems systematically into smaller parts.")
     logical_progression_and_refinement: int = Field(..., description="Builds solutions step-by-step and refines them.")
     edge_case_consideration: int = Field(..., description="Considers boundary and corner cases.")
 
+
 class CommunicationAndClarity(BaseModel):
     technical_explanation_depth: int = Field(..., description="Depth of technical explanations given.")
     conciseness_vs_verbosity: int = Field(..., description="Balance between being concise or overly verbose.")
     confidence_level: int = Field(..., description="Apparent confidence in communication.")
 
+
 class EngagementAndAdaptability(BaseModel):
-    interactivity_and_responsiveness: int = Field(..., description="Engagement with the interviewer and responsiveness.")
+    interactivity_and_responsiveness: int = Field(
+        ..., description="Engagement with the interviewer and responsiveness."
+    )
     flexibility_in_thinking: int = Field(..., description="Ability to adapt thinking when new ideas are presented.")
+
 
 class StressHandling(BaseModel):
     hesitation_and_filler_words: int = Field(..., description="Usage of filler words (uh, um, like).")
     panic_vs_composure: int = Field(..., description="Overall composure or panic under stress.")
 
+
 class MetaCognitiveAwareness(BaseModel):
     self_correction_frequency: int = Field(..., description="Frequency of self-correction.")
-    debugging_thought_process: int = Field(..., description="Quality of debugging or critical thinking about own errors.")
+    debugging_thought_process: int = Field(
+        ..., description="Quality of debugging or critical thinking about own errors."
+    )
+
 
 class PerformanceVsExpectations(BaseModel):
     answer_speed_vs_quality: int = Field(..., description="Balance between speed of answers and their completeness.")
     completeness_of_answers: int = Field(..., description="How thorough and complete the answers are.")
+
 
 class ConversationMetrics(BaseModel):
     problem_solving: ProblemSolving
@@ -52,6 +63,7 @@ class ConversationMetrics(BaseModel):
     meta_cognitive_awareness: MetaCognitiveAwareness
     performance_vs_expectations: PerformanceVsExpectations
 
+
 # Initialize the Azure OpenAI model
 llm = AzureChatOpenAI(
     deployment_name=deployment,
@@ -59,6 +71,7 @@ llm = AzureChatOpenAI(
     azure_endpoint=endpoint,
     api_version=api_version,
 )
+
 
 def evaluate_conversation(conversation_file: str) -> Dict:
     """
@@ -70,9 +83,7 @@ def evaluate_conversation(conversation_file: str) -> Dict:
         conversation_history = json.load(f)
 
     # Build conversation text from history
-    conversation_text = [
-        f"{entry[0].upper()}: {entry[1]}" for entry in conversation_history
-    ]
+    conversation_text = [f"{entry[0].upper()}: {entry[1]}" for entry in conversation_history]
 
     system_prompt = """
 You are an AI Judge tasked with analyzing a conversation for:
@@ -116,9 +127,7 @@ Return a JSON object with these fields:
 
     human_prompt = f"Conversation History:\n{chr(10).join(conversation_text)}"
 
-    response = llm.invoke(
-        [SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)]
-    )
+    response = llm.invoke([SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)])
     content = response.content
 
     # Remove potential markdown code fences, if present.
@@ -129,6 +138,7 @@ Return a JSON object with these fields:
 
     metrics = ConversationMetrics.model_validate_json(content.strip())
     return metrics.model_dump()
+
 
 def main():
     # Evaluate conversation and remove the source file if it exists.
@@ -154,6 +164,7 @@ def main():
         json.dump(analysis_list, f, indent=2)
 
     print(result)
+
 
 if __name__ == "__main__":
     main()

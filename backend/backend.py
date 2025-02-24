@@ -27,6 +27,7 @@ load_dotenv()
 
 responses = []  # Store conversation
 
+
 class RTMessage(dict):
     def __getattr__(self, name):
         return self.get(name)
@@ -163,11 +164,7 @@ Always *guide, do not give answers. Your goal is to **assess the problem-solving
 
             if parsed["type"] == "user_message":
                 # Option 1 - works for one time
-                await self.client.send_item(
-                    item=UserMessageItem(
-                        content=[InputTextContentPart(text=parsed["text"])]
-                    )
-                )
+                await self.client.send_item(item=UserMessageItem(content=[InputTextContentPart(text=parsed["text"])]))
 
                 # Option 2 - Erros about id
                 # await self.client.send_item(
@@ -194,9 +191,7 @@ Always *guide, do not give answers. Your goal is to **assess the problem-solving
                 }
                 await self.send(delta_message)
 
-            await self.send(
-                {"type": "control", "action": "text_done", "id": content_id}
-            )
+            await self.send({"type": "control", "action": "text_done", "id": content_id})
             self.logger.debug("Text content processed successfully")
         except Exception as error:
             self.logger.error(f"Error handling text content: {error}")
@@ -212,13 +207,9 @@ Always *guide, do not give answers. Your goal is to **assess the problem-solving
             content_id = f"{content.item_id}-{content.content_index}"
             responseText = ""
             async for chunk in content.transcript_chunks():
-                await self.send(
-                    {"id": content_id, "type": "text_delta", "delta": chunk}
-                )
+                await self.send({"id": content_id, "type": "text_delta", "delta": chunk})
                 responseText = responseText + chunk
-            await self.send(
-                {"type": "control", "action": "text_done", "id": content_id}
-            )
+            await self.send({"type": "control", "action": "text_done", "id": content_id})
             print("AI Response Text: " + responseText)
             responses.append(["model", responseText])
 
@@ -259,9 +250,7 @@ Always *guide, do not give answers. Your goal is to **assess the problem-solving
                 "text": event.transcript or "",
             }
             await self.send(transcription)
-            self.logger.debug(
-                f"Input audio processed successfully, transcription length: {len(transcription['text'])}"
-            )
+            self.logger.debug(f"Input audio processed successfully, transcription length: {len(transcription['text'])}")
         except Exception as error:
             self.logger.error(f"Error handling input audio: {error}")
             raise

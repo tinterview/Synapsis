@@ -7,8 +7,6 @@ from pydantic import BaseModel, Field
 from langchain_openai import AzureChatOpenAI
 from langchain.schema import SystemMessage, HumanMessage
 
-# filepath: /home/noir/tinterview/tinterview/final_llm.py
-
 load_dotenv()
 
 # Azure OpenAI configuration

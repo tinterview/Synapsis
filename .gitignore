@@ -27,3 +27,6 @@ dist-ssr
 .venv
 .env
 .ruff_cache
+
+# Ignore .pid files
+*.pid
